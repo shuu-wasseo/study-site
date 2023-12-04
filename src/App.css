@@ -1,38 +1,65 @@
 .App {
   text-align: center;
+  background-color: #27303f;
+  height: 100vh;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.navbar {
+  height: 6vh;
+  background-color: #191f29;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+.header {
+  position: absolute;
+  background-color: #191f29;
   align-items: center;
-  justify-content: center;
+  margin: auto;
   font-size: calc(10px + 2vmin);
   color: white;
+  padding: 1vh 1vw;
+  gap: 1vw
 }
 
-.App-link {
-  color: #61dafb;
+.left {
+  left: 0
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.right {
+  right: 0
+}
+
+.header-children {
+  background-color: #191f29;
+  border: none;
+  height: 3vh;
+}
+
+.body {
+  align-items: center;
+}
+
+input {
+  background-color: #27303f;
+  border: none;
+}
+
+button, .button {
+  background-color: #191f29;
+  color: white;
+  border: none
+}
+
+@font-face {
+  font-family: 'Helvetica Neue';
+  src: local('Helvetica Neue'),
+    url('./fonts/HelveticaNeueMed.ttf')
+}
+
+* {
+  margin: 0;
+  color: white;
+  font-family: 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
