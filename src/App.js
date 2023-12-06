@@ -35,31 +35,35 @@ function Body(props) {
     switch (props.tab) {
       case 3:
         async function fetchData() {
+          console.log("entered fetchdata")
           try {
-            await getDocs(collection(db, "users")).then((data) => {
-              console.log("data", data.data())
-              setUsers(data)
-            });
-            //setUsers(data);
-            //setLoading(false);
+            console.log("trying to get data")
+            const usersCollection = await getDocs(collection(db, "users"))
+            console.log("data", usersCollection)
+            setUsers(usersCollection)
+            setLoading(false);
+            console.log("data got")
           } catch (error) {
-            console.log("catch")
+            console.log("didnt get the data", error)
             setError(error);
             setLoading(false);
           }
         }
         fetchData()
     }
-  }, []);
+  }, [props.tab]);
 
-  function logIn(formData, users) {
+  function logIn(formData) {
+    formData.preventDefault()
+    console.log(formData)
     console.log("logging in")
-    for (let user in users) {
-      console.log(user)
-      if (user.data().username == formData.get("username")) {
+    console.log("users", users)
+    users.forEach((user) => {
+      console.log("user", user.data())
+      if (user.data().account.username == formData.get("username")) {
         console.log("yass")
       }
-    }
+    })
   }
 
   if (!loggedIn && props.tab !== 3) {
@@ -72,17 +76,21 @@ function Body(props) {
   } else {
     switch (props.tab) {
       case 3:
-        return (
-          <form action={(e) => {e.preventDefault(); alert("preventing default"); logIn(e, users)}}>
-            <label>
-              username: <input type="text" name="username" />
-            </label>
-            <label>
-              password: <input type="text" name="password" />
-            </label>
-            <input type="submit" value="submit" className="button" />
-          </form>
-        )
+        if (!loading) {
+          return (
+            <form onSubmit={logIn}>
+              <label>
+                username: <input type="text" name="username" />
+              </label>
+              <label>
+                password: <input type="text" name="password" />
+              </label>
+              <input type="submit" value="submit" className="button" />
+            </form>
+          )
+        } else {
+          return ("hold on its loading")
+        }
     }
   }
 }
