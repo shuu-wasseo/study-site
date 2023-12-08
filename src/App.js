@@ -1,9 +1,12 @@
 import './App.css';
+
 import { useState, useEffect } from 'react' 
-import { initializeApp } from 'firebase/app';
-import { getAnalytics } from "firebase/analytics";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { useCookies } from 'react-cookie';
+
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, getDocs } from "firebase/firestore";
+
+import { sha256 } from 'js-sha256';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDtM_T9fJt4miiDDYkkWJg3XynMwWBFBMg",
@@ -17,80 +20,75 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 const db = getFirestore(app);
+
+console.log(JSON.parse(localStorage.getItem("signin")))
+
+function checkLoggedIn(users, cookie) {
+  if (users) {
+    console.log("checking logged in", users, cookie)
+    users.forEach(user => {
+      if (cookie === user.data().account.password) {
+        return true
+      }
+    })
+    return false
+  } else {
+    return false
+  }
+}
 
 function Body(props) {
   const [cookies, setCookie, removeCookie] = useCookies();
-  const [loggedIn, setLoggedIn] = useState(cookies.loggedIn)
-  const [username, setUsername] = useState("")
 
-  console.log(props.tab)
+  const users = props.users
 
-  const [users, setUsers] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    switch (props.tab) {
-      case 3:
-        async function fetchData() {
-          console.log("entered fetchdata")
-          try {
-            console.log("trying to get data")
-            const usersCollection = await getDocs(collection(db, "users"))
-            console.log("data", usersCollection)
-            setUsers(usersCollection)
-            setLoading(false);
-            console.log("data got")
-          } catch (error) {
-            console.log("didnt get the data", error)
-            setError(error);
-            setLoading(false);
-          }
-        }
-        fetchData()
-    }
-  }, [props.tab]);
-
-  function logIn(formData) {
-    formData.preventDefault()
-    console.log(formData)
-    console.log("logging in")
-    console.log("users", users)
+  function logIn() {
+    const givenUsername = document.getElementById('username-input').value
+    const givenPassword = document.getElementById('password-input').value
     users.forEach((user) => {
-      console.log("user", user.data())
-      if (user.data().account.username == formData.get("username")) {
-        console.log("yass")
+      console.log(user.data())
+      if (user.data().account.username === givenUsername) {
+        console.log("found user")
+        if (user.data().account.password === sha256(givenUsername + givenPassword)) {
+          console.log("logged in")
+          setCookie("loggedIn", sha256(givenUsername + givenPassword))
+        }
       }
     })
   }
 
-  if (!loggedIn && props.tab !== 3) {
+  if (!checkLoggedIn(users, cookies.loggedIn) && props.tab !== 3) {
     setCookie("loggedIn", "")
     return (
       <div className="body">
-        um... i think you should probably log in or sign up
+        {props.loading ? "loading..." : "um... i think you should probably log in or sign up first"}
       </div>
     )
   } else {
     switch (props.tab) {
       case 3:
-        if (!loading) {
-          return (
-            <form onSubmit={logIn}>
-              <label>
-                username: <input type="text" name="username" />
-              </label>
-              <label>
-                password: <input type="text" name="password" />
-              </label>
-              <input type="submit" value="submit" className="button" />
-            </form>
-          )
+        if (!checkLoggedIn(users, cookies.loggedIn)) {
+          if (!props.loading) {
+            return (
+              <div>
+                <p>
+                  username: <input type="text" id="username-input" />
+                </p>
+                <p>
+                  password: <input type="text" id="password-input" />
+                </p>
+                <button className="button" id="login-submit-button" onClick={logIn}>submit</button>
+              </div>
+            )
+          } else {
+            return ("hold on its loading")
+          }
         } else {
-          return ("hold on its loading")
+          return ("so youre like logged in alr yay!!!")
         }
+      default:
+        return (checkLoggedIn(users, cookies.loggedIn) ? "youre logged in yay!" : "uhh yeah um")
     }
   }
 }
@@ -100,6 +98,30 @@ function App() {
   const [loggedIn, setLoggedIn] = useState(cookies.loggedIn)
   const [tab, setTab] = useState(0)
 
+  const [users, setUsers] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      console.log("entered fetchdata")
+      try {
+        console.log("trying to get data")
+        const usersCollection = await getDocs(collection(db, "users"))
+        console.log("data", usersCollection)
+        setUsers(usersCollection)
+        setLoading(false);
+        console.log("data got")
+      } catch (error) {
+        console.log("didnt get the data", error)
+        setError(error);
+        setLoading(false);
+      }
+    }
+
+    fetchData()
+  }, []); 
+
   const navbar = (
     <div className="navbar">
       <div className="header left">
@@ -108,7 +130,7 @@ function App() {
         <button className="header-children">stats</button> 
       </div>
       <div className="header right">
-        {loggedIn ? <button className="header-children">account</button> : <button className="header-children" onClick={() => {setTab(3); console.log("tab")}}>log in / sign up</button>}
+        {checkLoggedIn(users, cookies.loggedIn) ? <button className="header-children">account</button> : <button className="header-children" onClick={() => {setTab(3); console.log("tab")}}>log in / sign up</button>}
       </div>
     </div>
   )
@@ -118,7 +140,7 @@ function App() {
       <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-app-compat.js"></script>
       <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore-compat.js"></script>
       {navbar}
-      <Body tab={tab}/>
+      <Body tab={tab} users={users} loading={loading}/>
     </div>
   );
 }
