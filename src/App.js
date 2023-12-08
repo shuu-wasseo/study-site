@@ -39,6 +39,8 @@ function checkLoggedIn(users, cookie) {
 }
 
 function Body(props) {
+  console.log("rendering body", props)
+
   const [cookies, setCookie, removeCookie] = useCookies();
 
   const users = props.users
