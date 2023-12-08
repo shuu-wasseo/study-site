@@ -58,7 +58,9 @@ function Body(props) {
     })
   }
 
-  if (!checkLoggedIn(users, cookies.loggedIn) && props.tab !== 3) {
+  if (props.error) {
+    return ("lmfao error")
+  } else if (!checkLoggedIn(users, cookies.loggedIn) && props.tab !== 3) {
     setCookie("loggedIn", "")
     return (
       <div className="body">
@@ -95,7 +97,6 @@ function Body(props) {
 
 function App() {
   const [cookies, setCookie, removeCookie] = useCookies();
-  const [loggedIn, setLoggedIn] = useState(cookies.loggedIn)
   const [tab, setTab] = useState(0)
 
   const [users, setUsers] = useState(null);
@@ -120,7 +121,7 @@ function App() {
     }
 
     fetchData()
-  }, []); 
+  }, [tab]); 
 
   const navbar = (
     <div className="navbar">
@@ -140,7 +141,7 @@ function App() {
       <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-app-compat.js"></script>
       <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore-compat.js"></script>
       {navbar}
-      <Body tab={tab} users={users} loading={loading}/>
+      <Body tab={tab} users={users} loading={loading} error={error}/>
     </div>
   );
 }
