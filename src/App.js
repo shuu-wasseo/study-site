@@ -25,8 +25,10 @@ const db = getFirestore(app);
 console.log(JSON.parse(localStorage.getItem("signin")))
 
 function checkLoggedIn(users, cookie) {
+  if (!cookie) {
+    return false
+  }
   if (users) {
-    console.log("checking logged in", users, cookie)
     users.forEach(user => {
       if (cookie === user.data().account.password) {
         return true
@@ -39,15 +41,13 @@ function checkLoggedIn(users, cookie) {
 }
 
 function Body(props) {
-  console.log("rendering body", props)
-
-  const [cookies, setCookie, removeCookie] = useCookies();
-
   const users = props.users
+  const [cookies, setCookie, removeCookie] = useCookies(["loggedIn"]);
 
   function logIn() {
     const givenUsername = document.getElementById('username-input').value
     const givenPassword = document.getElementById('password-input').value
+    console.log("logging in:", givenUsername, givenPassword)
     users.forEach((user) => {
       console.log(user.data())
       if (user.data().account.username === givenUsername) {
@@ -55,15 +55,21 @@ function Body(props) {
         if (user.data().account.password === sha256(givenUsername + givenPassword)) {
           console.log("logged in")
           setCookie("loggedIn", sha256(givenUsername + givenPassword))
+          console.log(sha256(givenUsername + givenPassword), cookies.loggedIn)
         }
       }
     })
   }
 
+  useEffect(() => {
+    if (!checkLoggedIn(users, cookies.loggedIn)) {
+      setCookie("loggedIn", "")
+    }
+  }, [])
+
   if (props.error) {
     return ("lmfao error")
   } else if (!checkLoggedIn(users, cookies.loggedIn) && props.tab !== 3) {
-    setCookie("loggedIn", "")
     return (
       <div className="body">
         {props.loading ? "loading..." : "um... i think you should probably log in or sign up first"}
@@ -76,6 +82,7 @@ function Body(props) {
           if (!props.loading) {
             return (
               <div>
+                <p>loggedin status: {checkLoggedIn(users, cookies.loggedIn) ? "true" : "false"}</p>
                 <p>
                   username: <input type="text" id="username-input" />
                 </p>
@@ -143,7 +150,7 @@ function App() {
       <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-app-compat.js"></script>
       <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore-compat.js"></script>
       {navbar}
-      <Body tab={tab} users={users} loading={loading} error={error}/>
+      <Body tab={tab} users={users} loading={loading} error={error} />
     </div>
   );
 }
