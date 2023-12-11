@@ -65,6 +65,7 @@ function Body(props) {
     if (!checkLoggedIn(users, cookies.loggedIn)) {
       setCookie("loggedIn", "")
     }
+    cookies = useCookies(["loggedIn"])[0]
   }, [])
 
   if (props.error) {
