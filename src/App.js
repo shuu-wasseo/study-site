@@ -1,7 +1,7 @@
 import './App.css';
 
 import { useState, useEffect } from 'react' 
-import { useCookies } from 'react-cookie';
+import { Cookies } from 'js-cookie';
 
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs } from "firebase/firestore";
@@ -42,7 +42,6 @@ function checkLoggedIn(users, cookie) {
 
 function Body(props) {
   const users = props.users
-  const [cookies, setCookie, removeCookie] = useCookies(["loggedIn"]);
 
   function logIn() {
     const givenUsername = document.getElementById('username-input').value
@@ -54,23 +53,22 @@ function Body(props) {
         console.log("found user")
         if (user.data().account.password === sha256(givenUsername + givenPassword)) {
           console.log("logged in")
-          setCookie("loggedIn", sha256(givenUsername + givenPassword))
-          console.log(sha256(givenUsername + givenPassword), cookies.loggedIn)
+          Cookies.set("loggedIn", sha256(givenUsername + givenPassword))
+          console.log(sha256(givenUsername + givenPassword), Cookies.get("loggedIn"))
         }
       }
     })
   }
 
   useEffect(() => {
-    if (!checkLoggedIn(users, cookies.loggedIn)) {
-      setCookie("loggedIn", "")
+    if (!checkLoggedIn(users, Cookies.get("loggedIn"))) {
+      Cookies.set("loggedIn", "")
     }
-    cookies = useCookies(["loggedIn"])[0]
   }, [])
 
   if (props.error) {
     return ("lmfao error")
-  } else if (!checkLoggedIn(users, cookies.loggedIn) && props.tab !== 3) {
+  } else if (!checkLoggedIn(users, Cookies.get("loggedIn")) && props.tab !== 3) {
     return (
       <div className="body">
         {props.loading ? "loading..." : "um... i think you should probably log in or sign up first"}
@@ -79,11 +77,11 @@ function Body(props) {
   } else {
     switch (props.tab) {
       case 3:
-        if (!checkLoggedIn(users, cookies.loggedIn)) {
+        if (!checkLoggedIn(users, Cookies.get("loggedIn"))) {
           if (!props.loading) {
             return (
               <div>
-                <p>loggedin status: {checkLoggedIn(users, cookies.loggedIn) ? "true" : "false"}</p>
+                <p>loggedin status: {checkLoggedIn(users, Cookies.get("loggedIn")) ? "true" : "false"}</p>
                 <p>
                   username: <input type="text" id="username-input" />
                 </p>
@@ -100,13 +98,12 @@ function Body(props) {
           return ("so youre like logged in alr yay!!!")
         }
       default:
-        return (checkLoggedIn(users, cookies.loggedIn) ? "youre logged in yay!" : "uhh yeah um")
+        return (checkLoggedIn(users, Cookies.get("loggedIn")) ? "youre logged in yay!" : "uhh yeah um")
     }
   }
 }
 
 function App() {
-  const [cookies, setCookie, removeCookie] = useCookies();
   const [tab, setTab] = useState(0)
 
   const [users, setUsers] = useState(null);
@@ -141,7 +138,7 @@ function App() {
         <button className="header-children">stats</button> 
       </div>
       <div className="header right">
-        {checkLoggedIn(users, cookies.loggedIn) ? <button className="header-children">account</button> : <button className="header-children" onClick={() => {setTab(3); console.log("tab")}}>log in / sign up</button>}
+        {checkLoggedIn(users, Cookies.get("loggedIn")) ? <button className="header-children">account</button> : <button className="header-children" onClick={() => {setTab(3); console.log("tab")}}>log in / sign up</button>}
       </div>
     </div>
   )
