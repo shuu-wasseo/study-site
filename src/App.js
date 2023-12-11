@@ -1,7 +1,7 @@
 import './App.css';
 
 import { useState, useEffect } from 'react' 
-import { Cookies } from 'js-cookie';
+import Cookies from 'js-cookie';
 
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs } from "firebase/firestore";
@@ -25,11 +25,13 @@ const db = getFirestore(app);
 console.log(JSON.parse(localStorage.getItem("signin")))
 
 function checkLoggedIn(users, cookie) {
+  console.log("checking", users, cookie)
   if (!cookie) {
     return false
   }
   if (users) {
     users.forEach(user => {
+      console.log(user.data().account.password, cookie)
       if (cookie === user.data().account.password) {
         return true
       }
@@ -42,6 +44,7 @@ function checkLoggedIn(users, cookie) {
 
 function Body(props) {
   const users = props.users
+  const [loggedIn, setLoggedIn] = useState(checkLoggedIn(users, Cookies.get("loggedIn"))) 
 
   function logIn() {
     const givenUsername = document.getElementById('username-input').value
@@ -54,21 +57,21 @@ function Body(props) {
         if (user.data().account.password === sha256(givenUsername + givenPassword)) {
           console.log("logged in")
           Cookies.set("loggedIn", sha256(givenUsername + givenPassword))
-          console.log(sha256(givenUsername + givenPassword), Cookies.get("loggedIn"))
+          setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
         }
       }
     })
   }
 
   useEffect(() => {
-    if (!checkLoggedIn(users, Cookies.get("loggedIn"))) {
+    if (loggedIn) {
       Cookies.set("loggedIn", "")
     }
-  }, [])
+  }, [users, loggedIn])
 
   if (props.error) {
     return ("lmfao error")
-  } else if (!checkLoggedIn(users, Cookies.get("loggedIn")) && props.tab !== 3) {
+  } else if (loggedIn && props.tab !== 3) {
     return (
       <div className="body">
         {props.loading ? "loading..." : "um... i think you should probably log in or sign up first"}
@@ -77,11 +80,10 @@ function Body(props) {
   } else {
     switch (props.tab) {
       case 3:
-        if (!checkLoggedIn(users, Cookies.get("loggedIn"))) {
+        if (loggedIn) {
           if (!props.loading) {
             return (
               <div>
-                <p>loggedin status: {checkLoggedIn(users, Cookies.get("loggedIn")) ? "true" : "false"}</p>
                 <p>
                   username: <input type="text" id="username-input" />
                 </p>
