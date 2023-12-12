@@ -22,21 +22,21 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-console.log(JSON.parse(localStorage.getItem("signin")))
-
 function checkLoggedIn(users, cookie) {
   console.log("checking", users, cookie)
   if (!cookie) {
     return false
   }
   if (users) {
+    let found = false
     users.forEach(user => {
       console.log(user.data().account.password, cookie)
       if (cookie === user.data().account.password) {
-        return true
+        console.log("found cookie")
+        found = found || true
       }
     })
-    return false
+    return found
   } else {
     return false
   }
@@ -44,60 +44,154 @@ function checkLoggedIn(users, cookie) {
 
 function Body(props) {
   const users = props.users
-  const [loggedIn, setLoggedIn] = useState(checkLoggedIn(users, Cookies.get("loggedIn"))) 
+  const [loggedIn, setLoggedIn] = useState(checkLoggedIn(users, Cookies.get("loggedIn")))
+  const [signingUp, setSigningUp] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
 
   function logIn() {
     const givenUsername = document.getElementById('username-input').value
     const givenPassword = document.getElementById('password-input').value
-    console.log("logging in:", givenUsername, givenPassword)
+    let found = false
     users.forEach((user) => {
-      console.log(user.data())
       if (user.data().account.username === givenUsername) {
-        console.log("found user")
+        found = true
         if (user.data().account.password === sha256(givenUsername + givenPassword)) {
-          console.log("logged in")
-          Cookies.set("loggedIn", sha256(givenUsername + givenPassword))
+          Cookies.set("loggedIn", sha256(givenUsername + givenPassword), { expires: 365 })
           setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
+        } else {
+          setErrorMessage("wrong password.")
         }
       }
     })
+    if (!found) {
+      setErrorMessage("invalid username.")
+    }
+  }
+
+  function logOut() {
+    Cookies.set("loggedIn", "", { expires: 365 })
+    setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
+  }
+
+  function signUp() {
+    const givenUsername = document.getElementById('username-input').value
+    const givenPassword = document.getElementById('password-input').value
+    const confirmPassword = document.getElementById('password-input-confirm').value
+    let found = false
+    users.forEach((user) => {
+      if (user.data().account.username === givenUsername) {
+        found = true
+      }
+    })
+    if (found) {
+      setErrorMessage("username already taken.")
+      return
+    }
+    if (givenPassword !== confirmPassword) {
+      setErrorMessage("passwords do not match.")
+    } else {
+      try {
+        db.collection("users").doc(givenUsername).set({
+          account: {
+            username: givenUsername,
+            password: givenPassword,
+            profile_image: "https://i.pinimg.com/custom_covers/222x/85498161615209203_1636332751.jpg"
+          },
+          tiers: ["bad", "good"]
+        })
+        // sample group
+        // sample subject
+        // sample module
+        // sample systems (gpa and msg)
+        // sample bands
+      } catch (error) {
+        console.error("writing document failed:", error);
+      }
+    }
   }
 
   useEffect(() => {
-    if (loggedIn) {
-      Cookies.set("loggedIn", "")
-    }
-  }, [users, loggedIn])
+    setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
+  }, [users])
 
   if (props.error) {
     return ("lmfao error")
-  } else if (loggedIn && props.tab !== 3) {
+  } else if (props.loading) {
+    return (
+      <div className="body"> 
+        loading...
+      </div>
+    )
+  } else if (!loggedIn && props.tab !== 3) {
     return (
       <div className="body">
-        {props.loading ? "loading..." : "um... i think you should probably log in or sign up first"}
+        um... i think you should probably log in or sign up first
       </div>
     )
   } else {
     switch (props.tab) {
+      case 0:
+        return (
+          <div className="body">
+            welcome home! :3
+          </div>
+        )
+      case 1:
+        return (
+          <div className="body">
+            here are all the subjects!
+          </div>
+        )
+      case 2:
+        return (
+          <div className="body">
+            here are all your stats!
+          </div>
+        )
       case 3:
-        if (loggedIn) {
+        if (!loggedIn) {
           if (!props.loading) {
-            return (
-              <div>
-                <p>
-                  username: <input type="text" id="username-input" />
-                </p>
-                <p>
-                  password: <input type="text" id="password-input" />
-                </p>
-                <button className="button" id="login-submit-button" onClick={logIn}>submit</button>
-              </div>
-            )
+            if (!signingUp) {
+              return (
+                <div className="body">
+                  <p>
+                    username: <input type="text" id="username-input" />
+                  </p>
+                  <p>
+                    password: <input type="text" id="password-input" />
+                  </p>
+                  <button className="button" id="login-submit-button" onClick={logIn}>submit</button>
+                  <p style={{color: "red"}}>{errorMessage}</p>
+                  <p>if you don't have an account yet, sign up <a onClick={() => setSigningUp(true)}>here</a>.</p>
+                </div>
+              )
+            } else {
+              return (
+                <div className="body">
+                  <p>
+                    username: <input type="text" id="username-input" />
+                  </p>
+                  <p>
+                    password: <input type="text" id="password-input" />
+                  </p>
+                  <p>
+                    confirm password: <input type="text" id="password-input-confirm" />
+                  </p>
+                  <button className="button" id="login-submit-button" onClick={signUp}>submit</button>
+                  <p style={{color: "red"}}>{errorMessage}</p>
+                  <p>if you already have an account, log in <a onClick={() => setSigningUp(false)}>here</a>.</p>
+                </div>
+              )
+            }
           } else {
             return ("hold on its loading")
           }
         } else {
-          return ("so youre like logged in alr yay!!!")
+          return (
+            <div className="body">
+              <button onClick={() => logOut()}>log out</button>
+            </div>
+          )  
         }
       default:
         return (checkLoggedIn(users, Cookies.get("loggedIn")) ? "youre logged in yay!" : "uhh yeah um")
@@ -135,12 +229,12 @@ function App() {
   const navbar = (
     <div className="navbar">
       <div className="header left">
-        <button className="header-children">logo</button>
-        <button className="header-children">subjects</button> 
-        <button className="header-children">stats</button> 
+        <button className="header-children" onClick={() => setTab(0)}>logo</button>
+        <button className="header-children" onClick={() => setTab(1)}>subjects</button> 
+        <button className="header-children" onClick={() => setTab(2)}>stats</button> 
       </div>
       <div className="header right">
-        {checkLoggedIn(users, Cookies.get("loggedIn")) ? <button className="header-children">account</button> : <button className="header-children" onClick={() => {setTab(3); console.log("tab")}}>log in / sign up</button>}
+        <button className="header-children" onClick={() => setTab(3)}>{checkLoggedIn(users, Cookies.get("loggedIn")) ? "account" : "log in / sign up"}</button>
       </div>
     </div>
   )
