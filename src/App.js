@@ -42,6 +42,14 @@ function checkLoggedIn(users, cookie) {
   }
 }
 
+function addGroup(username, data) {
+  try {
+    db.collection("users").doc(username).collection("groups").doc(data.name).set(data)
+  } catch (error) {
+    console.error("writing document failed:", error);
+  }
+}
+
 function Body(props) {
   const users = props.users
   const [loggedIn, setLoggedIn] = useState(checkLoggedIn(users, Cookies.get("loggedIn")))
