@@ -23,14 +23,17 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 function checkLoggedIn(users, cookie) {
+  console.log("new check", users, cookie)
   if (!cookie) {
     return false
   }
   if (users) {
     let found = false
     users.forEach(user => {
+      console.log("checking", user.data().account.password, cookie)
       if (cookie === user.data().account.password) {
         found = found || true
+        console.log("found it!")
       }
     })
     return found
@@ -150,7 +153,7 @@ function Body(props) {
         setDoc(doc(db, "users", givenUsername), {
           account: {
             username: givenUsername,
-            password: givenPassword,
+            password: sha256(givenUsername + givenPassword),
             profile_image: "https://i.pinimg.com/custom_covers/222x/85498161615209203_1636332751.jpg"
           },
           tiers: ["not ready", "ready"]
@@ -219,7 +222,8 @@ function Body(props) {
       } 
       if (!exception) {
         Cookies.set("loggedIn", sha256(givenUsername + givenPassword), { expires: 365 })
-        setLoggedIn(true)
+        fetchData()
+        setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
       } else {
         deleteDoc(doc(db, "users", givenUsername))
         console.log("attempted to delete document")
@@ -266,6 +270,7 @@ function Body(props) {
           </div>
         )
       case 3:
+        console.log("loggedIn", loggedIn)
         if (!loggedIn) {
           if (!props.loading) {
             if (!signingUp) {
