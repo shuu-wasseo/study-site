@@ -175,43 +175,43 @@ function Body(props) {
         });
         addSystem(givenUsername, {
           name: "MSG", bands: {
-            A1: (i) => {return i >= 75}, 
-            A2: (i) => {return i >= 70 && i < 75}, 
-            B3: (i) => {return i >= 65 && i < 70}, 
-            B4: (i) => {return i >= 60 && i < 65}, 
-            C5: (i) => {return i >= 55 && i < 60}, 
-            C6: (i) => {return i >= 50 && i < 55}, 
-            D7: (i) => {return i >= 45 && i < 50}, 
-            E8: (i) => {return i >= 40 && i < 45}, 
-            F9: (i) => {return i < 40}
+            A1: "(i) => {return i >= 75}", 
+            A2: "(i) => {return i >= 70 && i < 75}", 
+            B3: "(i) => {return i >= 65 && i < 70}", 
+            B4: "(i) => {return i >= 60 && i < 65}", 
+            C5: "(i) => {return i >= 55 && i < 60}", 
+            C6: "(i) => {return i >= 50 && i < 55}", 
+            D7: "(i) => {return i >= 45 && i < 50}", 
+            E8: "(i) => {return i >= 40 && i < 45}", 
+            F9: "(i) => {return i < 40}"
           }
         });
         addSystem(givenUsername, {
           name: "GPA 1", bands: {
-            "A+": (i) => {return i >= 80}, 
-            A: (i) => {return i >= 70 && i < 80}, 
-            "B+": (i) => {return i >= 65 && i < 70}, 
-            B: (i) => {return i >= 60 && i < 65}, 
-            "C+": (i) => {return i >= 55 && i < 60},
-            C: (i) => {return i >= 50 && i < 55},
-            D: (i) => {return i >= 45 && i < 50},
-            E: (i) => {return i >= 40 && i < 45},
-            F: (i) => {return i < 40}
+            "A+": "(i) => {return i >= 80}", 
+            A: "(i) => {return i >= 70 && i < 80}", 
+            "B+": "(i) => {return i >= 65 && i < 70}", 
+            B: "(i) => {return i >= 60 && i < 65}", 
+            "C+": "(i) => {return i >= 55 && i < 60}",
+            C: "(i) => {return i >= 50 && i < 55}",
+            D: "(i) => {return i >= 45 && i < 50}",
+            E: "(i) => {return i >= 40 && i < 45}",
+            F: "(i) => {return i < 40}"
           }
         });
         addSystem(givenUsername, {
           name: "GPA 2", bands: {
-            "A+": (i) => {return i >= 85},
-            A: (i) => {return i >= 70 && i < 85},
-            "B+": (i) => {return i >= 65 && i < 70},
-            B: (i) => {return i >= 60 && i < 65},
-            "C+": (i) => {return i >= 55 && i < 60},
-            C: (i) => {return i >= 50 && i < 55},
-            "C-": (i) => {return i >= 45 && i < 50},
-            "D+": (i) => {return i >= 40 && i < 45},
-            D: (i) => {return i >= 35 && i < 40},
-            E: (i) => {return i >= 20 && i < 35},
-            U: (i) => {return i < 20}
+            "A+": "(i) => {return i >= 85}",
+            A: "(i) => {return i >= 70 && i < 85}",
+            "B+": "(i) => {return i >= 65 && i < 70}",
+            B: "(i) => {return i >= 60 && i < 65}",
+            "C+": "(i) => {return i >= 55 && i < 60}",
+            C: "(i) => {return i >= 50 && i < 55}",
+            "C-": "(i) => {return i >= 45 && i < 50}",
+            "D+": "(i) => {return i >= 40 && i < 45}",
+            D: "(i) => {return i >= 35 && i < 40}",
+            E: "(i) => {return i >= 20 && i < 35}",
+            U: "(i) => {return i < 20}"
           }
         });
       } catch (error) {
