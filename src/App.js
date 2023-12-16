@@ -123,6 +123,7 @@ function Body(props) {
     if (givenPassword !== confirmPassword) {
       setErrorMessage("passwords do not match.")
     } else {
+      let exception = false
       try {
         db.collection("users").doc(givenUsername).set({
           account: {
@@ -132,73 +133,72 @@ function Body(props) {
           },
           tiers: ["not ready", "ready"]
         })
-        // sample group
-        // sample subject
-        // sample module
-        // sample systems (gpa and msg)
-        // sample bands
+        addGroup(givenUsername, {
+          name: "sample group",
+          description: "sample description",
+          system: "MSG"
+        });
+        addSubject(givenUsername, "sample group", {
+          name: "sample subject",
+          weightage: 1
+        });
+        addModule(givenUsername, "sample group", "sample subject", {
+          name: "sample name",
+          tier: 0,
+          weightage: 1,
+          records: {
+            "1702651632011": 0
+          }
+        });
+        addSystem(givenUsername, {
+          name: "MSG", bands: {
+            A1: (i) => {return i >= 75}, 
+            A2: (i) => {return i >= 70 && i < 75}, 
+            B3: (i) => {return i >= 65 && i < 70}, 
+            B4: (i) => {return i >= 60 && i < 65}, 
+            C5: (i) => {return i >= 55 && i < 60}, 
+            C6: (i) => {return i >= 50 && i < 55}, 
+            D7: (i) => {return i >= 45 && i < 50}, 
+            E8: (i) => {return i >= 40 && i < 45}, 
+            F9: (i) => {return i < 40}
+          }
+        });
+        addSystem(givenUsername, {
+          name: "GPA 1", bands: {
+            "A+": (i) => {return i >= 80}, 
+            A: (i) => {return i >= 70 && i < 80}, 
+            "B+": (i) => {return i >= 65 && i < 70}, 
+            B: (i) => {return i >= 60 && i < 65}, 
+            "C+": (i) => {return i >= 55 && i < 60},
+            C: (i) => {return i >= 50 && i < 55},
+            D: (i) => {return i >= 45 && i < 50},
+            E: (i) => {return i >= 40 && i < 45},
+            F: (i) => {return i < 40}
+          }
+        });
+        addSystem(givenUsername, {
+          name: "GPA 2", bands: {
+            "A+": (i) => {return i >= 85},
+            A: (i) => {return i >= 70 && i < 85},
+            "B+": (i) => {return i >= 65 && i < 70},
+            B: (i) => {return i >= 60 && i < 65},
+            "C+": (i) => {return i >= 55 && i < 60},
+            C: (i) => {return i >= 50 && i < 55},
+            "C-": (i) => {return i >= 45 && i < 50},
+            "D+": (i) => {return i >= 40 && i < 45},
+            D: (i) => {return i >= 35 && i < 40},
+            E: (i) => {return i >= 20 && i < 35},
+            U: (i) => {return i < 20}
+          }
+        });
       } catch (error) {
         console.error("writing document failed:", error);
+        exception = error
+      } if (!exception) {
+        Cookies.set("loggedIn", sha256(givenUsername + givenPassword), { expires: 365 })
+        setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
       }
     }
-    addGroup(givenUsername, {
-      name: "sample group",
-      description: "sample description",
-      system: "MSG"
-    });
-    addSubject(givenUsername, "sample group", {
-      name: "sample subject",
-      weightage: 1
-    });
-    addModule(givenUsername, "sample group", "sample subject", {
-      name: "sample name",
-      tier: 0,
-      weightage: 1,
-      records: {
-        "1702651632011": 0
-      }
-    });
-    addSystem(givenUsername, {
-      name: "MSG", bands: {
-        a1: (i) => {return i >= 75}, 
-        a2: (i) => {return i >= 70 && i < 75}, 
-        b3: (i) => {return i >= 65 && i < 70}, 
-        b4: (i) => {return i >= 60 && i < 65}, 
-        c5: (i) => {return i >= 55 && i < 60}, 
-        c6: (i) => {return i >= 50 && i < 55}, 
-        d7: (i) => {return i >= 45 && i < 50}, 
-        e8: (i) => {return i >= 40 && i < 45}, 
-        f9: (i) => {return i < 40}
-      }
-    });
-    addSystem(givenUsername, {
-      name: "GPA 1", bands: {
-        aPlus: (i) => {return i >= 80}, 
-        a: (i) => {return i >= 70 && i < 80}, 
-        bPlus: (i) => {return i >= 65 && i < 70}, 
-        b: (i) => {return i >= 60 && i < 65}, 
-        cPlus: (i) => {return i >= 55 && i < 60},
-        c: (i) => {return i >= 50 && i < 55},
-        d: (i) => {return i >= 45 && i < 50},
-        e: (i) => {return i >= 40 && i < 45},
-        f: (i) => {return i < 40}
-      }
-    });
-    addSystem(givenUsername, {
-      name: "GPA 2", bands: {
-        aPlus: (i) => {return i >= 85},
-        a: (i) => {return i >= 70 && i < 85},
-        bPlus: (i) => {return i >= 65 && i < 70},
-        b: (i) => {return i >= 60 && i < 65},
-        cPlus: (i) => {return i >= 55 && i < 60},
-        c: (i) => {return i >= 50 && i < 55},
-        cMinus: (i) => {return i >= 45 && i < 50},
-        dPlus: (i) => {return i >= 40 && i < 45},
-        d: (i) => {return i >= 35 && i < 40},
-        e: (i) => {return i >= 20 && i < 35},
-        u: (i) => {return i < 20}
-      }
-    });
   }
 
   useEffect(() => {
