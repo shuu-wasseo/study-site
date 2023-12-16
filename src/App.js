@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Cookies from 'js-cookie';
 
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, doc, setDoc } from "firebase/firestore";
+import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore";
 
 import { sha256 } from 'js-sha256';
 
@@ -44,7 +44,7 @@ function checkLoggedIn(users, cookie) {
 
 function addGroup(username, data) {
   try {
-    setDoc(doc(db, "users", "groups", data.name), data);
+    setDoc(doc(db, "users", username, "groups", data.name), data);
   } catch (error) {
     console.error("writing document failed:", error);
   }
@@ -52,7 +52,7 @@ function addGroup(username, data) {
 
 function addSubject(username, groupname, data) {
   try {
-    setDoc(doc(db, "users", "groups", groupname, "subjects", data.name), data);
+    setDoc(doc(db, "users", username, "groups", groupname, "subjects", data.name), data);
   } catch (error) {
     console.error("writing document failed:", error);
   }
@@ -60,7 +60,7 @@ function addSubject(username, groupname, data) {
 
 function addModule(username, groupname, subjectname, data) {
   try {
-    setDoc(doc(db, "users", "groups", groupname, "subjects", subjectname, "modules", data.name), data);
+    setDoc(doc(db, "users", username, "groups", groupname, "subjects", subjectname, "modules", data.name), data);
   } catch (error) {
     console.error("writing document failed:", error);
   }
@@ -68,7 +68,7 @@ function addModule(username, groupname, subjectname, data) {
 
 function addSystem(username, data) {
   try {
-    setDoc(doc(db, "users", "systems", data.name), data);
+    setDoc(doc(db, "users", username, "systems", data.name), data);
   } catch (error) {
     console.error("writing document failed:", error);
   }
@@ -76,10 +76,33 @@ function addSystem(username, data) {
 
 
 function Body(props) {
-  const users = props.users
+  const [users, setUsers] = useState(props.users)
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const [loggedIn, setLoggedIn] = useState(checkLoggedIn(users, Cookies.get("loggedIn")))
   const [signingUp, setSigningUp] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+
+  useEffect(() => {
+    async function fetchData() {
+      console.log("entered fetchdata")
+      try {
+        console.log("trying to get data")
+        const usersCollection = await getDocs(collection(db, "users"))
+        console.log("data", usersCollection)
+        setUsers(usersCollection)
+        setLoading(false);
+        console.log("data got")
+      } catch (error) {
+        console.log("didnt get the data", error)
+        setError(error);
+        setLoading(false);
+      }
+    }
+
+    fetchData()
+  }, [errorMessage])
 
   function logIn() {
     const givenUsername = document.getElementById('username-input').value
@@ -194,6 +217,8 @@ function Body(props) {
       } catch (error) {
         console.error("writing document failed:", error);
         exception = error
+        deleteDoc(doc(db, "users", givenUsername))
+        console.log("attempted to delete document")
       } if (!exception) {
         Cookies.set("loggedIn", sha256(givenUsername + givenPassword), { expires: 365 })
         setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
