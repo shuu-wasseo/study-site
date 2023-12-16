@@ -23,16 +23,13 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 function checkLoggedIn(users, cookie) {
-  console.log("checking", users, cookie)
   if (!cookie) {
     return false
   }
   if (users) {
     let found = false
     users.forEach(user => {
-      console.log(user.data().account.password, cookie)
       if (cookie === user.data().account.password) {
-        console.log("found cookie")
         found = found || true
       }
     })
@@ -84,27 +81,26 @@ function Body(props) {
   const [signingUp, setSigningUp] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
 
-  useEffect(() => {
-    async function fetchData() {
-      console.log("entered fetchdata")
-      try {
-        console.log("trying to get data")
-        const usersCollection = await getDocs(collection(db, "users"))
-        console.log("data", usersCollection)
-        setUsers(usersCollection)
-        setLoading(false);
-        console.log("data got")
-      } catch (error) {
-        console.log("didnt get the data", error)
-        setError(error);
-        setLoading(false);
-      }
+  async function fetchData() {
+    try {
+      const usersCollection = await getDocs(collection(db, "users"))
+      setUsers(usersCollection)
+      setLoading(false);
+    } catch (error) {
+      setError(error);
+      setLoading(false);
     }
+  }
 
+  useEffect(() => {
     fetchData()
+    console.log(users)
   }, [errorMessage])
 
   function logIn() {
+    setErrorMessage("")
+    fetchData()
+
     const givenUsername = document.getElementById('username-input').value
     const givenPassword = document.getElementById('password-input').value
     let found = false
@@ -130,6 +126,9 @@ function Body(props) {
   }
 
   function signUp() {
+    setErrorMessage("")
+    fetchData()
+
     const givenUsername = document.getElementById('username-input').value
     const givenPassword = document.getElementById('password-input').value
     const confirmPassword = document.getElementById('password-input-confirm').value
@@ -217,11 +216,13 @@ function Body(props) {
       } catch (error) {
         console.error("writing document failed:", error);
         exception = error
+      } 
+      if (!exception) {
+        Cookies.set("loggedIn", sha256(givenUsername + givenPassword), { expires: 365 })
+        setLoggedIn(true)
+      } else {
         deleteDoc(doc(db, "users", givenUsername))
         console.log("attempted to delete document")
-      } if (!exception) {
-        Cookies.set("loggedIn", sha256(givenUsername + givenPassword), { expires: 365 })
-        setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
       }
     }
   }
@@ -324,16 +325,11 @@ function App() {
 
   useEffect(() => {
     async function fetchData() {
-      console.log("entered fetchdata")
       try {
-        console.log("trying to get data")
         const usersCollection = await getDocs(collection(db, "users"))
-        console.log("data", usersCollection)
         setUsers(usersCollection)
         setLoading(false);
-        console.log("data got")
       } catch (error) {
-        console.log("didnt get the data", error)
         setError(error);
         setLoading(false);
       }
