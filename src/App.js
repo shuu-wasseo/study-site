@@ -106,6 +106,7 @@ function Body(props) {
 
     const givenUsername = document.getElementById('username-input').value
     const givenPassword = document.getElementById('password-input').value
+    
     let found = false
     users.forEach((user) => {
       if (user.data().account.username === givenUsername) {
@@ -120,6 +121,12 @@ function Body(props) {
     })
     if (!found) {
       setErrorMessage("invalid username.")
+    }
+    if (givenUsername == "") {
+      setErrorMessage("Fields cannot be empty.")
+    }
+    if (givenPassword == "") {
+      setErrorMessage("Fields cannot be empty.")
     }
   }
 
@@ -228,6 +235,12 @@ function Body(props) {
         deleteDoc(doc(db, "users", givenUsername))
         console.log("attempted to delete document")
       }
+    }
+    if (givenUsername == "") {
+      setErrorMessage("Fields cannot be empty.")
+    }
+    if (givenPassword == "") {
+      setErrorMessage("Fields cannot be empty.")
     }
   }
 
