@@ -50,6 +50,31 @@ function addGroup(username, data) {
   }
 }
 
+function addSubject(username, groupname, data) {
+  try {
+    db.collection("users").doc(username).collection("groups").doc(groupname).collection("subjects").doc(data.name).set(data)
+  } catch (error) {
+    console.error("writing document failed:", error);
+  }
+}
+
+function addModule(username, groupname, subjectname, data) {
+  try {
+    db.collection("users").doc(username).collection("groups").doc(groupname).collection("subjects").doc(subjectname).collection("modules").doc(data.name).set(data)
+  } catch (error) {
+    console.error("writing document failed:", error);
+  }
+}
+
+function addSystem(username, data) {
+  try {
+    db.collection("users").doc(username).collection("systems").doc(data.name).set(data)
+  } catch (error) {
+    console.error("writing document failed:", error);
+  }
+}
+
+
 function Body(props) {
   const users = props.users
   const [loggedIn, setLoggedIn] = useState(checkLoggedIn(users, Cookies.get("loggedIn")))
@@ -105,7 +130,7 @@ function Body(props) {
             password: givenPassword,
             profile_image: "https://i.pinimg.com/custom_covers/222x/85498161615209203_1636332751.jpg"
           },
-          tiers: ["bad", "good"]
+          tiers: ["not ready", "ready"]
         })
         // sample group
         // sample subject
@@ -116,6 +141,64 @@ function Body(props) {
         console.error("writing document failed:", error);
       }
     }
+    addGroup(givenUsername, {
+      name: "sample group",
+      description: "sample description",
+      system: "MSG"
+    });
+    addSubject(givenUsername, "sample group", {
+      name: "sample subject",
+      weightage: 1
+    });
+    addModule(givenUsername, "sample group", "sample subject", {
+      name: "sample name",
+      tier: 0,
+      weightage: 1,
+      records: {
+        "1702651632011": 0
+      }
+    });
+    addSystem(givenUsername, {
+      name: "MSG", bands: {
+        a1: (i) => {return i >= 75}, 
+        a2: (i) => {return i >= 70 && i < 75}, 
+        b3: (i) => {return i >= 65 && i < 70}, 
+        b4: (i) => {return i >= 60 && i < 65}, 
+        c5: (i) => {return i >= 55 && i < 60}, 
+        c6: (i) => {return i >= 50 && i < 55}, 
+        d7: (i) => {return i >= 45 && i < 50}, 
+        e8: (i) => {return i >= 40 && i < 45}, 
+        f9: (i) => {return i < 40}
+      }
+    });
+    addSystem(givenUsername, {
+      name: "GPA 1", bands: {
+        aPlus: (i) => {return i >= 80}, 
+        a: (i) => {return i >= 70 && i < 80}, 
+        bPlus: (i) => {return i >= 65 && i < 70}, 
+        b: (i) => {return i >= 60 && i < 65}, 
+        cPlus: (i) => {return i >= 55 && i < 60},
+        c: (i) => {return i >= 50 && i < 55},
+        d: (i) => {return i >= 45 && i < 50},
+        e: (i) => {return i >= 40 && i < 45},
+        f: (i) => {return i < 40}
+      }
+    });
+    addSystem(givenUsername, {
+      name: "GPA 2", bands: {
+        aPlus: (i) => {return i >= 85},
+        a: (i) => {return i >= 70 && i < 85},
+        bPlus: (i) => {return i >= 65 && i < 70},
+        b: (i) => {return i >= 60 && i < 65},
+        cPlus: (i) => {return i >= 55 && i < 60},
+        c: (i) => {return i >= 50 && i < 55},
+        cMinus: (i) => {return i >= 45 && i < 50},
+        dPlus: (i) => {return i >= 40 && i < 45},
+        d: (i) => {return i >= 35 && i < 40},
+        e: (i) => {return i >= 20 && i < 35},
+        u: (i) => {return i < 20}
+      }
+    });
   }
 
   useEffect(() => {
