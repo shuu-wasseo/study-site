@@ -42,6 +42,26 @@ function checkLoggedIn(users, cookie) {
   }
 }
 
+function checkUsername(users,cookie) {
+  console.log("new check for username", users, cookie)
+  if (!cookie) {
+    return "No username found"
+  }
+  if (users) {
+    let found = "No username found"
+    users.forEach(user => {
+      console.log("checking", user.data().account.password, cookie)
+      if (cookie === user.data().account.password) {
+        found = user.data().account.username;
+        console.log("found a username!")
+      }
+    })
+    return found
+  } else {
+    return "No username found"
+  }
+}
+
 function addGroup(username, data) {
   try {
     setDoc(doc(db, "users", username, "groups", data.name), data);
@@ -72,6 +92,10 @@ function addSystem(username, data) {
   } catch (error) {
     console.error("writing document failed:", error);
   }
+}
+
+function getKey(object, value) {
+  return Object.keys(object).find(key => object[key] === value);
 }
 
 
@@ -271,9 +295,23 @@ function Body(props) {
           </div>
         )
       case 1:
+        let renderSubjects = "";
+        const groupsref = collection(db, "users", checkUsername(users, Cookies.get("loggedIn")), "groups");
+        for (const group in groupsref) {
+          let renderSubjectlist = "";
+          const groupref = collection(db, "users", checkUsername(users, Cookies.get("loggedIn")), "groups", getKey(groupsref, group), "subjects");
+          renderSubjectlist += groupref.map(subject => 
+            <div key={getKey(group, subject)}><h2>{subject.name}</h2></div>
+          )
+          renderSubjects += renderSubjectlist;
+          console.log(renderSubjects);
+        }
         return (
           <div className="body">
             here are all the subjects!
+            <div id="subjectlist">
+              {renderSubjects}
+            </div>
           </div>
         )
       case 2:
