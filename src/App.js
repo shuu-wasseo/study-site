@@ -123,7 +123,7 @@ function Body(props) {
   useEffect(() => {
     fetchData()
     console.log(users)
-  }, [errorMessage])
+  }, [errorMessage, users])
 
   function logIn() {
     setErrorMessage("")
@@ -147,10 +147,10 @@ function Body(props) {
     if (!found) {
       setErrorMessage("invalid username.")
     }
-    if (givenUsername == "") {
+    if (givenUsername === null) {
       setErrorMessage("Fields cannot be empty.")
     }
-    if (givenPassword == "") {
+    if (givenPassword === null) {
       setErrorMessage("Fields cannot be empty.")
     }
   }
@@ -261,10 +261,10 @@ function Body(props) {
         console.log("attempted to delete document")
       }
     }
-    if (givenUsername == "") {
+    if (givenUsername === null) {
       setErrorMessage("Fields cannot be empty.")
     }
-    if (givenPassword == "") {
+    if (givenPassword === null) {
       setErrorMessage("Fields cannot be empty.")
     }
   }
@@ -287,8 +287,10 @@ function Body(props) {
             setGrouplist(grouplist+(doc.data().name));
           })
         })
+        break;
+      default:
     }
-  }, [users])
+  }, [users, grouplist, setGrouplist, props.tab])
 
   if (props.error) {
     return ("lmfao error")
