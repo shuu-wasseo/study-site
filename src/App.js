@@ -34,6 +34,7 @@ async function fetchData(params, func, setLoading, setError) {
     setLoading(false);
   } catch (error) {
     setError(error);
+    console.error(error)
     setLoading(false);
   }
 }
