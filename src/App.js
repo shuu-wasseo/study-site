@@ -273,19 +273,11 @@ function Body(props) {
     setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")));
     switch (props.tab) {
       case 1:
-        let groups;
         let cookie = Cookies.get("loggedIn");
         users.forEach(user => {
           if (cookie === user.data().account.password) {
-            groups = user.data().groups;
+            setGrouplist(user.data().groups);
           }
-        })
-        setGrouplist([]);
-        getDocs(groups).then(QuerySnapshot => {
-          QuerySnapshot.forEach((doc) => {
-            console.log("doc.data", doc.data());
-            setGrouplist(grouplist+(doc.data().name));
-          })
         })
         break;
       default:
@@ -315,11 +307,22 @@ function Body(props) {
           </div>
         )
       case 1:
+        let groupslist;
+        let cookie = Cookies.get("loggedIn");
+        users.forEach(user => {
+          if (cookie === user.data().account.password) {
+            groupslist = user.data().groups;
+          }
+        })
         return (
           <div className="body">
             here are all the subjects!
             <div id="subjectlist">
-              {grouplist}
+              {
+                groupslist.map((group) => 
+                  <div class="group">{group.name}</div>
+                )
+              }
             </div>
           </div>
         )
