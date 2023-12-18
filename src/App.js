@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Cookies from 'js-cookie';
 
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, QuerySnapshot } from "firebase/firestore";
 
 import { sha256 } from 'js-sha256';
 
@@ -107,6 +107,7 @@ function Body(props) {
   const [loggedIn, setLoggedIn] = useState(checkLoggedIn(users, Cookies.get("loggedIn")))
   const [signingUp, setSigningUp] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [grouplist, setGrouplist] = useState([]);
 
   async function fetchData() {
     try {
@@ -269,7 +270,24 @@ function Body(props) {
   }
 
   useEffect(() => {
-    setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
+    setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")));
+    switch (props.tab) {
+      case 1:
+        let groups;
+        let cookie = Cookies.get("loggedIn");
+        users.forEach(user => {
+          if (cookie === user.data().account.password) {
+            groups = user.data().groups;
+          }
+        })
+        setGrouplist([]);
+        getDocs(groups).then(QuerySnapshot => {
+          QuerySnapshot.forEach((doc) => {
+            console.log("doc.data", doc.data());
+            setGrouplist(grouplist+(doc.data().name));
+          })
+        })
+    }
   }, [users])
 
   if (props.error) {
@@ -295,22 +313,11 @@ function Body(props) {
           </div>
         )
       case 1:
-        let renderSubjects = "";
-        const groupsref = collection(db, "users", checkUsername(users, Cookies.get("loggedIn")), "groups");
-        for (const group in groupsref) {
-          let renderSubjectlist = "";
-          const groupref = collection(db, "users", checkUsername(users, Cookies.get("loggedIn")), "groups", getKey(groupsref, group), "subjects");
-          renderSubjectlist += groupref.map(subject => 
-            <div key={getKey(group, subject)}><h2>{subject.name}</h2></div>
-          )
-          renderSubjects += renderSubjectlist;
-          console.log(renderSubjects);
-        }
         return (
           <div className="body">
             here are all the subjects!
             <div id="subjectlist">
-              {renderSubjects}
+              {grouplist}
             </div>
           </div>
         )
