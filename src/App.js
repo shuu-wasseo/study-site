@@ -22,18 +22,36 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+async function fetchData(params=[], func, setLoading, setError) {
+  try {
+    const ncollection = await getDocs(collection(db, "users/" + params.join("/")))
+    let modifiedCollection = []
+    ncollection.forEach((docu) => {
+      modifiedCollection.push(docu.data())
+    })
+    console.log(params, func, modifiedCollection)
+    func(modifiedCollection)
+    setLoading(false);
+  } catch (error) {
+    setError(error);
+    setLoading(false);
+  }
+}
+
 function checkLoggedIn(users, cookie) {
-  console.log("new check", users, cookie)
   if (!cookie) {
+    return false
+  }
+  try {
+    JSON.parse(cookie)
+  } catch {
     return false
   }
   if (users) {
     let found = false
     users.forEach(user => {
-      console.log("checking", user.data().account.password, cookie)
-      if (cookie === user.data().account.password) {
+      if (JSON.parse(cookie).password === user.account.password) {
         found = found || true
-        console.log("found it!")
       }
     })
     return found
@@ -43,17 +61,19 @@ function checkLoggedIn(users, cookie) {
 }
 
 function checkUsername(users,cookie) {
-  console.log("new check for username", users, cookie)
   if (!cookie) {
     return "No username found"
+  }
+  try {
+    JSON.parse(cookie)
+  } catch {
+    return false
   }
   if (users) {
     let found = "No username found"
     users.forEach(user => {
-      console.log("checking", user.data().account.password, cookie)
-      if (cookie === user.data().account.password) {
-        found = user.data().account.username;
-        console.log("found a username!")
+      if (JSON.parse(cookie).password === user.data().account.password) {
+        found = user.account.username;
       }
     })
     return found
@@ -101,6 +121,8 @@ function getKey(object, value) {
 
 function Body(props) {
   const [users, setUsers] = useState(props.users)
+  const [groups, setGroups] = useState([])
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -109,25 +131,19 @@ function Body(props) {
   const [errorMessage, setErrorMessage] = useState("")
   const [grouplist, setGrouplist] = useState([]);
 
-  async function fetchData() {
-    try {
-      const usersCollection = await getDocs(collection(db, "users"))
-      setUsers(usersCollection)
-      setLoading(false);
-    } catch (error) {
-      setError(error);
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    fetchData()
-    console.log(users)
+    let username = JSON.parse(Cookies.get("loggedIn")).username
+    setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
+
+    fetchData([], setUsers, setLoading, setError)
+    if (checkLoggedIn(users, Cookies.get("loggedIn")) && props.tab === 1) {
+      fetchData([username, "groups"], setGroups, setLoading, setError)
+    }
   }, [errorMessage, users])
 
   function logIn() {
     setErrorMessage("")
-    fetchData()
+    fetchData([], setUsers, setLoading, setError)
 
     const givenUsername = document.getElementById('username-input').value
     const givenPassword = document.getElementById('password-input').value
@@ -137,7 +153,7 @@ function Body(props) {
       if (user.data().account.username === givenUsername) {
         found = true
         if (user.data().account.password === sha256(givenUsername + givenPassword)) {
-          Cookies.set("loggedIn", sha256(givenUsername + givenPassword), { expires: 365 })
+          Cookies.set("loggedIn", JSON.stringify({username: givenUsername, password: sha256(givenUsername + givenPassword)}), { expires: 365 })
           setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
         } else {
           setErrorMessage("wrong password.")
@@ -162,7 +178,7 @@ function Body(props) {
 
   function signUp() {
     setErrorMessage("")
-    fetchData()
+    fetchData([], setUsers, setLoading, setError)
 
     const givenUsername = document.getElementById('username-input').value
     const givenPassword = document.getElementById('password-input').value
@@ -253,12 +269,11 @@ function Body(props) {
         exception = error
       } 
       if (!exception) {
-        Cookies.set("loggedIn", sha256(givenUsername + givenPassword), { expires: 365 })
-        fetchData()
+        Cookies.set("loggedIn", JSON.stringify({username: givenUsername, password: sha256(givenUsername + givenPassword)}), { expires: 365 })
+        fetchData([], setUsers, setLoading, setError)
         setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
       } else {
         deleteDoc(doc(db, "users", givenUsername))
-        console.log("attempted to delete document")
       }
     }
     if (givenUsername === null) {
@@ -268,21 +283,6 @@ function Body(props) {
       setErrorMessage("Fields cannot be empty.")
     }
   }
-
-  useEffect(() => {
-    setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")));
-    switch (props.tab) {
-      case 1:
-        let cookie = Cookies.get("loggedIn");
-        users.forEach(user => {
-          if (cookie === user.data().account.password) {
-            setGrouplist(user.data().groups);
-          }
-        })
-        break;
-      default:
-    }
-  }, [users, grouplist, setGrouplist, props.tab])
 
   if (props.error) {
     return ("lmfao error")
@@ -307,21 +307,15 @@ function Body(props) {
           </div>
         )
       case 1:
-        let groupslist;
-        let cookie = Cookies.get("loggedIn");
-        users.forEach(user => {
-          if (cookie === user.data().account.password) {
-            groupslist = user.data().groups;
-          }
-        })
         return (
           <div className="body">
-            here are all the subjects!
+            here are all the groups!
             <div id="subjectlist">
               {
-                groupslist.map((group) => 
-                  <div class="group">{group.name}</div>
-                )
+                groups.map((group) => { 
+                  console.log(group)
+                  return <div className="group">{group.name}</div>
+                })
               }
             </div>
           </div>
@@ -333,7 +327,6 @@ function Body(props) {
           </div>
         )
       case 3:
-        console.log("loggedIn", loggedIn)
         if (!loggedIn) {
           if (!props.loading) {
             if (!signingUp) {
@@ -392,18 +385,7 @@ function App() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const usersCollection = await getDocs(collection(db, "users"))
-        setUsers(usersCollection)
-        setLoading(false);
-      } catch (error) {
-        setError(error);
-        setLoading(false);
-      }
-    }
-
-    fetchData()
+    fetchData([], setUsers, setLoading, setError)
   }, [tab]); 
 
   const navbar = (
