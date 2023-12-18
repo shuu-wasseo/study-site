@@ -22,7 +22,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-async function fetchData(params=[], func, setLoading, setError) {
+async function fetchData(params, func, setLoading, setError) {
   try {
     const ncollection = await getDocs(collection(db, "users/" + params.join("/")))
     let modifiedCollection = []
@@ -132,13 +132,15 @@ function Body(props) {
   const [grouplist, setGrouplist] = useState([]);
 
   useEffect(() => {
-    let username = JSON.parse(Cookies.get("loggedIn")).username
     setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
 
     fetchData([], setUsers, setLoading, setError)
-    if (checkLoggedIn(users, Cookies.get("loggedIn")) && props.tab === 1) {
-      fetchData([username, "groups"], setGroups, setLoading, setError)
-    }
+    try {
+      let username = JSON.parse(Cookies.get("loggedIn")).username
+      if (checkLoggedIn(users, Cookies.get("loggedIn")) && props.tab === 1) {
+        fetchData([username, "groups"], setGroups, setLoading, setError)
+      }
+    } catch {}
   }, [errorMessage, users])
 
   function logIn() {
