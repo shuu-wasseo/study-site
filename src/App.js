@@ -152,7 +152,7 @@ function Body(props) {
     
     let found = false
     users.forEach((user) => {
-      if (user.data().account.username === givenUsername) {
+      if (user.account.username === givenUsername) {
         found = true
         if (user.data().account.password === sha256(givenUsername + givenPassword)) {
           Cookies.set("loggedIn", JSON.stringify({username: givenUsername, password: sha256(givenUsername + givenPassword)}), { expires: 365 })
