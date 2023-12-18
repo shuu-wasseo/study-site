@@ -72,7 +72,7 @@ function checkUsername(users,cookie) {
   if (users) {
     let found = "No username found"
     users.forEach(user => {
-      if (JSON.parse(cookie).password === user.data().account.password) {
+      if (JSON.parse(cookie).password === user.account.password) {
         found = user.account.username;
       }
     })
@@ -154,7 +154,7 @@ function Body(props) {
     users.forEach((user) => {
       if (user.account.username === givenUsername) {
         found = true
-        if (user.data().account.password === sha256(givenUsername + givenPassword)) {
+        if (user.account.password === sha256(givenUsername + givenPassword)) {
           Cookies.set("loggedIn", JSON.stringify({username: givenUsername, password: sha256(givenUsername + givenPassword)}), { expires: 365 })
           setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
         } else {
@@ -187,7 +187,7 @@ function Body(props) {
     const confirmPassword = document.getElementById('password-input-confirm').value
     let found = false
     users.forEach((user) => {
-      if (user.data().account.username === givenUsername) {
+      if (user.account.username === givenUsername) {
         found = true
       }
     })
