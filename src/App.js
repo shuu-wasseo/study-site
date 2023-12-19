@@ -29,7 +29,6 @@ async function fetchData(params, func, setLoading, setError) {
     ncollection.forEach((docu) => {
       modifiedCollection.push(docu.data())
     })
-    console.log(params, func, modifiedCollection)
     func(modifiedCollection)
     setLoading(false);
   } catch (error) {
@@ -122,7 +121,6 @@ function getKey(object, value) {
 
 function Body(props) {
   const [users, setUsers] = useState(props.users)
-  const [groups, setGroups] = useState([])
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -130,7 +128,14 @@ function Body(props) {
   const [loggedIn, setLoggedIn] = useState(checkLoggedIn(users, Cookies.get("loggedIn")))
   const [signingUp, setSigningUp] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
-  const [grouplist, setGrouplist] = useState([]);
+
+  const [groupList, setGroupList] = useState([]);
+  const [subjectList, setSubjectList] = useState([]);
+  const [moduleList, setModuleList] = useState([])
+
+  const [chosenGroup, setChosenGroup] = useState({})
+  const [chosenSubject, setChosenSubject] = useState({})
+  const [chosenModule, setChosenModule] = useState({})
 
   useEffect(() => {
     setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
@@ -139,10 +144,18 @@ function Body(props) {
     try {
       let username = JSON.parse(Cookies.get("loggedIn")).username
       if (checkLoggedIn(users, Cookies.get("loggedIn")) && props.tab === 1) {
-        fetchData([username, "groups"], setGroups, setLoading, setError)
+        fetchData([username, "groups"], setGroupList, setLoading, setError)
+        if (Object.keys(chosenGroup).length) {
+          fetchData([username, "groups", chosenGroup.name, "subjects"], setSubjectList, setLoading, setError)
+        }
+        if (Object.keys(chosenSubject).length) {
+          fetchData([username, "groups", chosenGroup.name, "subjects", chosenSubject.name, "modules"], setModuleList, setLoading, setError)
+        }
       }
-    } catch {}
-  }, [errorMessage, users])
+    } catch(e) {
+      console.error(e)
+    }
+  }, [errorMessage, users, chosenGroup, chosenSubject])
 
   function logIn() {
     setErrorMessage("")
@@ -219,7 +232,7 @@ function Body(props) {
           weightage: 1
         });
         addModule(givenUsername, "sample group", "sample subject", {
-          name: "sample name",
+          name: "sample module",
           tier: 0,
           weightage: 1,
           records: {
@@ -312,14 +325,30 @@ function Body(props) {
       case 1:
         return (
           <div className="body">
-            here are all the groups!
-            <div id="subjectlist">
+            <div className="side-panel groups">
               {
-                groups.map((group) => { 
-                  console.log(group)
-                  return <div className="group">{group.name}</div>
+                groupList.map((group) => { 
+                  return <button className="side-panel-item" onClick={() => {setChosenGroup(group); setChosenSubject(""); setChosenModule("")}}>{group.name}</button>
                 })
               }
+            </div>
+            <div className="side-panel subjects">
+              { 
+                !chosenGroup ? "pick a group first!" : !subjectList ? "add a subject!" :
+                subjectList.map((subject) => { 
+                  return <button className="side-panel-item" onClick={() => {setChosenSubject(subject); setChosenModule("")}}>{subject.name}</button>
+                })
+              }
+            </div>
+            <div className="side-panel modules">
+              {
+                !chosenSubject ? "pick a subject first!" : !moduleList ? "add a module!" :
+                moduleList.map((module) => { 
+                  return <button className="side-panel-item" onClick={() => {setChosenModule(module)}}>{module.name}</button>
+                })
+              }
+            </div>
+            <div id="main">
             </div>
           </div>
         )
