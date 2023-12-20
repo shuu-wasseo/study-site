@@ -220,7 +220,6 @@ function Body(props) {
             password: sha256(givenUsername + givenPassword),
             profile_image: "https://i.pinimg.com/custom_covers/222x/85498161615209203_1636332751.jpg"
           },
-          tiers: ["not ready", "ready"]
         })
         addGroup(givenUsername, {
           name: "sample group",
@@ -229,7 +228,8 @@ function Body(props) {
         });
         addSubject(givenUsername, "sample group", {
           name: "sample subject",
-          weightage: 1
+          weightage: 1,
+          colour: "#ffffff"
         });
         addModule(givenUsername, "sample group", "sample subject", {
           name: "sample module",
@@ -241,45 +241,144 @@ function Body(props) {
         });
         addSystem(givenUsername, {
           name: "MSG", bands: {
-            A1: "(i) => {return i >= 75}", 
-            A2: "(i) => {return i >= 70 && i < 75}", 
-            B3: "(i) => {return i >= 65 && i < 70}", 
-            B4: "(i) => {return i >= 60 && i < 65}", 
-            C5: "(i) => {return i >= 55 && i < 60}", 
-            C6: "(i) => {return i >= 50 && i < 55}", 
-            D7: "(i) => {return i >= 45 && i < 50}", 
-            E8: "(i) => {return i >= 40 && i < 45}", 
-            F9: "(i) => {return i < 40}"
+            A1: {
+              condition: "(i) => {return i >= 75}", 
+              colour: "#ff0000",
+            },
+            A2: {
+              condition: "(i) => {return i >= 70 && i < 75}", 
+              colour: "#ffaa00"
+            },
+            B3: {
+              condition: "(i) => {return i >= 65 && i < 70}", 
+              colour: "#aaff00"
+            },
+            B4: {
+              condition: "(i) => {return i >= 60 && i < 65}", 
+              colour: "#00ff00"
+            }, 
+            C5: {
+              condition: "(i) => {return i >= 55 && i < 60}", 
+              colour: "#00ffaa"
+            }, 
+            C6: {
+              condition: "(i) => {return i >= 50 && i < 55}", 
+              colour: "#00aaff"
+            }, 
+            D7: {
+              condition: "(i) => {return i >= 45 && i < 50}", 
+              colour: "#0000ff"
+            }, 
+            E8: {
+              condition: "(i) => {return i >= 40 && i < 45}", 
+              colour: "#aa00ff"
+            }, 
+            F9: {
+              condition: "(i) => {return i < 40}", 
+              colour: "#ff00aa"
+            }
           }
         });
         addSystem(givenUsername, {
           name: "GPA 1", bands: {
-            "A+": "(i) => {return i >= 80}", 
-            A: "(i) => {return i >= 70 && i < 80}", 
-            "B+": "(i) => {return i >= 65 && i < 70}", 
-            B: "(i) => {return i >= 60 && i < 65}", 
-            "C+": "(i) => {return i >= 55 && i < 60}",
-            C: "(i) => {return i >= 50 && i < 55}",
-            D: "(i) => {return i >= 45 && i < 50}",
-            E: "(i) => {return i >= 40 && i < 45}",
-            F: "(i) => {return i < 40}"
+            "A+": {
+              condition: "(i) => {return i >= 80}", 
+              colour: "#a65bf5"
+            },
+            A: {
+              condition: "(i) => {return i >= 70 && i < 80}", 
+              colour: "#a53ef4"
+            },
+            "B+": {
+              condition: "(i) => {return i >= 65 && i < 70}", 
+              colour: "#a921f2"
+            },
+            B: {
+              condition: "(i) => {return i >= 60 && i < 65}", 
+              colour: "#ad0de7"
+            },
+            "C+": {
+              condition: "(i) => {return i >= 55 && i < 60}", 
+              colour: "#a65bf5"
+            },
+            C: {
+              condition: "(i) => {return i >= 50 && i < 55}", 
+              colour: "#a70cca"
+            },
+            D: {
+              condition: "(i) => {return i >= 45 && i < 50}", 
+              colour: "#9d0aae"
+            },
+            E: {
+              condition: "(i) => {return i >= 40 && i < 45}", 
+              colour: "#8e0891"
+            },
+            F: {
+              condition: "(i) => {return i < 40}", 
+              colour: "#74076c"
+            }
           }
         });
         addSystem(givenUsername, {
           name: "GPA 2", bands: {
-            "A+": "(i) => {return i >= 85}",
-            A: "(i) => {return i >= 70 && i < 85}",
-            "B+": "(i) => {return i >= 65 && i < 70}",
-            B: "(i) => {return i >= 60 && i < 65}",
-            "C+": "(i) => {return i >= 55 && i < 60}",
-            C: "(i) => {return i >= 50 && i < 55}",
-            "C-": "(i) => {return i >= 45 && i < 50}",
-            "D+": "(i) => {return i >= 40 && i < 45}",
-            D: "(i) => {return i >= 35 && i < 40}",
-            E: "(i) => {return i >= 20 && i < 35}",
-            U: "(i) => {return i < 20}"
+            "A+": {
+              condition: "(i) => {return i >= 85}", 
+              colour: "#2bf3d1"
+            },
+            A: {
+              condition: "(i) => {return i >= 70 && i < 85}", 
+              colour: "#19e6d8"
+            },
+            "B+": {
+              condition: "(i) => {return i >= 65 && i < 70}", 
+              colour: "#21bbc0"
+            },
+            B: {
+              condition: "(i) => {return i >= 60 && i < 65}", 
+              colour: "#258d9d"
+            },
+            "C+": {
+              condition: "(i) => {return i >= 55 && i < 60}", 
+              colour: "#26697d"
+            },
+            C: {
+              condition: "(i) => {return i >= 50 && i < 55}", 
+              colour: "#254c5f"
+            },
+            "C-": {
+              condition: "(i) => {return i >= 45 && i < 50}", 
+              colour: "#213545"
+            },
+            "D+": {
+              condition: "(i) => {return i >= 40 && i < 45}", 
+              colour: "#1a232d"
+            },
+            D: {
+              condition: "(i) => {return i >= 35 && i < 40}", 
+              colour: "#1a212d"
+            },
+            E: {
+              condition: "(i) => {return i >= 20 && i < 35}", 
+              colour: "#1a1f2d"
+            },
+            U: {
+              condition: "(i) => {return i < 20}", 
+              colour: "#1a1e2d"
+            }
           }
         });
+        addSystem(givenUsername, {
+          name: "yesAndNo", bands: {
+            "Yes": {
+              condition: "(i) => {return i == 100}", 
+              colour: "#00ff33"
+            },
+            "No": {
+              condition: "(i) => {return i == 0}", 
+              colour: "#ff0000"
+            }
+          }
+        })
       } catch (error) {
         console.error("writing document failed:", error);
         exception = error
