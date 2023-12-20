@@ -432,22 +432,22 @@ function Body(props) {
               }
               <button className={`side-panel-item ${chosenGroup === "settings" ? "selected" : ""}`} onClick={() => {setChosenGroup({name: "settings"})}}>settings</button>
             </div>
-            chosenGroup.name === "settings" ? <div></div> : !chosenGroup ? "pick a group first!" : !subjectList ? "add a subject!" :<div className="side-panel subjects">
+            {chosenGroup.name === "settings" ? <div></div> : !Object.keys(chosenGroup).length ? "pick a group first!" : !subjectList ? "add a subject!" :<div className="side-panel subjects">
               { 
                 subjectList.map((subject) => { 
                   return <button className={`side-panel-item ${chosenSubject === subject ? "selected" : ""}`} onClick={() => {setChosenSubject(subject); setChosenModule("")}}>{subject.name}</button>
                 })
               }
               <button className={`side-panel-item ${chosenSubject === "settings" ? "selected" : ""}`} onClick={() => {setChosenSubject({name: "settings"})}}>settings</button>
-            </div>
-            chosenGroup.name === "settings" && chosenSubject.name === "settings" ? <div></div> : !chosenSubject ? "pick a subject first!" : !moduleList ? "add a module!" : <div className="side-panel modules">
+            </div>}
+            {chosenGroup.name === "settings" && chosenSubject.name === "settings" ? <div></div> : !Object.keys(chosenSubject).length ? "pick a subject first!" : !moduleList ? "add a module!" : <div className="side-panel modules">
               {
                 moduleList.map((module) => { 
                   return <button className={`side-panel-item ${chosenModule === module ? "selected" : ""}`} onClick={() => {setChosenModule(module)}}>{module.name}</button>
                 })
               }
               <button className={`side-panel-item ${chosenModule === "settings" ? "selected" : ""}`} onClick={() => {setChosenModule({name: "settings"})}}>settings</button>
-            </div>
+            </div>}
             <div id="main">
             </div>
           </div>
