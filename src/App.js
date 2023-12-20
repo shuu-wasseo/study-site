@@ -328,24 +328,31 @@ function Body(props) {
             <div className="side-panel groups">
               {
                 groupList.map((group) => { 
-                  return <button className="side-panel-item" onClick={() => {setChosenGroup(group); setChosenSubject(""); setChosenModule("")}}>{group.name}</button>
+                  return <button className={`side-panel-item ${chosenGroup === group ? "selected" : ""}`} onClick={() => {setChosenGroup(group); setChosenSubject(""); setChosenModule("")}}>{group.name}</button>
                 })
               }
+              <button className={`side-panel-item ${chosenGroup === "settings" ? "selected" : ""}`} onClick={() => {setChosenGroup({name: "settings"})}}>settings</button>
             </div>
-            <div className="side-panel subjects">
+            chosenGroup.name === "settings" ? <div></div> : <div className="side-panel subjects">
               { 
                 !chosenGroup ? "pick a group first!" : !subjectList ? "add a subject!" :
-                subjectList.map((subject) => { 
-                  return <button className="side-panel-item" onClick={() => {setChosenSubject(subject); setChosenModule("")}}>{subject.name}</button>
-                })
+                (
+                  subjectList.map((subject) => { 
+                    return <button className={`side-panel-item ${chosenSubject === subject ? "selected" : ""}`} onClick={() => {setChosenSubject(subject); setChosenModule("")}}>{subject.name}</button>
+                  })
+                  <button >settings</button>
+                )
               }
             </div>
-            <div className="side-panel modules">
+            chosenGroup.name === "settings" && chosenSubject.name === "settings" ? <div></div> : <div className="side-panel modules">
               {
                 !chosenSubject ? "pick a subject first!" : !moduleList ? "add a module!" :
-                moduleList.map((module) => { 
-                  return <button className="side-panel-item" onClick={() => {setChosenModule(module)}}>{module.name}</button>
-                })
+                (
+                  moduleList.map((module) => { 
+                    return <button className={`side-panel-item ${chosenModule === module ? "selected" : ""}`} onClick={() => {setChosenModule(module)}}>{module.name}</button>
+                  })
+                  <button className={`side-panel-item ${chosenModule === "settings" ? "selected" : ""}`} onClick={() => {setChosenModule({name: "settings"})}}>settings</button>
+                )
               }
             </div>
             <div id="main">
