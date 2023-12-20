@@ -118,6 +118,63 @@ function getKey(object, value) {
   return Object.keys(object).find(key => object[key] === value);
 }
 
+function Dropdown(props) {
+  const [chosen, setChosen] = useState(props.list[0])
+  return (
+    <div class="dropdown">
+      <button class="dropbtn">{chosen}</button>
+      <div class="dropdown-content">
+        {
+          props.list.map(system => {
+            return <button onClick={system => setChosen(system)}>{system}</button>
+          })
+        }
+      </div>
+    </div>
+  )
+}
+
+function SubjectsBody(props) {
+  if (props.chosenGroup.name === "settings") {
+    return (
+      <div className="subjects-body">
+        <div className="add-group">
+          add group
+          <p>
+            name: <input type="text" id="form-addgroup-name-input" />
+          </p>
+          <p>
+            description: <input type="text" id="form-addgroup-description-input" />
+          </p>
+          <p>
+            system: <input id="form-addgroup-name-input" list="form-addgroup-system-list"/>
+          </p>
+          <datalist id="form-addgroup-system-list">
+            {
+              props.systems.map(system => {
+                return <option value={system.name} />
+              })
+            }
+          </datalist>
+        </div>
+      </div>
+    )
+  } else if (props.chosenSubject.name === "settings") {
+    return (
+      <div>
+        group settings
+        add a subject
+      </div>
+    )
+  } else if (props.chosenModule.name === "settings") {
+    return (
+      <div>
+        subject settings
+        add a module
+      </div>
+    )
+  }
+}
 
 function Body(props) {
   const [users, setUsers] = useState(props.users)
@@ -137,6 +194,8 @@ function Body(props) {
   const [chosenSubject, setChosenSubject] = useState({})
   const [chosenModule, setChosenModule] = useState({})
 
+  const [systems, setSystems] = useState({})
+
   useEffect(() => {
     setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
 
@@ -151,18 +210,20 @@ function Body(props) {
         if (Object.keys(chosenSubject).length) {
           fetchData([username, "groups", chosenGroup.name, "subjects", chosenSubject.name, "modules"], setModuleList, setLoading, setError)
         }
+        fetchData([username, "systems"], setSystems, setLoading, setError)
       }
     } catch(e) {
       console.error(e)
     }
+
   }, [errorMessage, users, chosenGroup, chosenSubject])
 
   function logIn() {
     setErrorMessage("")
     fetchData([], setUsers, setLoading, setError)
 
-    const givenUsername = document.getElementById('username-input').value
-    const givenPassword = document.getElementById('password-input').value
+    const givenUsername = document.getElementById('form-login-username-input').value
+    const givenPassword = document.getElementById('form-login-password-input').value
     
     let found = false
     users.forEach((user) => {
@@ -196,9 +257,9 @@ function Body(props) {
     setErrorMessage("")
     fetchData([], setUsers, setLoading, setError)
 
-    const givenUsername = document.getElementById('username-input').value
-    const givenPassword = document.getElementById('password-input').value
-    const confirmPassword = document.getElementById('password-input-confirm').value
+    const givenUsername = document.getElementById('form-login-username-input').value
+    const givenPassword = document.getElementById('form-login-password-input').value
+    const confirmPassword = document.getElementById('form-login-password-input-confirm').value
     let found = false
     users.forEach((user) => {
       if (user.account.username === givenUsername) {
@@ -398,7 +459,7 @@ function Body(props) {
       setErrorMessage("Fields cannot be empty.")
     }
   }
-
+ 
   if (props.error) {
     return ("lmfao error")
   } else if (props.loading) {
@@ -427,29 +488,32 @@ function Body(props) {
             <div className="side-panel groups">
               {
                 groupList.map((group) => { 
-                  return <button className={`side-panel-item ${chosenGroup === group ? "selected" : ""}`} onClick={() => {setChosenGroup(group); setChosenSubject(""); setChosenModule("")}}>{group.name}</button>
+                  return <button className={`side-panel-item ${chosenGroup === group ? "selected" : ""}`} onClick={() => {setChosenGroup(group); setChosenSubject({}); setChosenModule({})}}>{group.name}</button>
                 })
               }
-              <button className={`side-panel-item ${chosenGroup === "settings" ? "selected" : ""}`} onClick={() => {setChosenGroup({name: "settings"})}}>settings</button>
+              <button className={`side-panel-item ${chosenGroup === "settings" ? "selected" : ""}`} onClick={() => {setChosenGroup({name: "settings"}); setChosenSubject({}); setChosenModule({})}}>settings</button>
             </div>
-            {chosenGroup.name === "settings" ? <div></div> : !Object.keys(chosenGroup).length ? "pick a group first!" : !subjectList ? "add a subject!" :<div className="side-panel subjects">
-              { 
-                subjectList.map((subject) => { 
-                  return <button className={`side-panel-item ${chosenSubject === subject ? "selected" : ""}`} onClick={() => {setChosenSubject(subject); setChosenModule("")}}>{subject.name}</button>
-                })
-              }
-              <button className={`side-panel-item ${chosenSubject === "settings" ? "selected" : ""}`} onClick={() => {setChosenSubject({name: "settings"})}}>settings</button>
-            </div>}
-            {chosenGroup.name === "settings" && chosenSubject.name === "settings" ? <div></div> : !Object.keys(chosenSubject).length ? "pick a subject first!" : !moduleList ? "add a module!" : <div className="side-panel modules">
-              {
-                moduleList.map((module) => { 
-                  return <button className={`side-panel-item ${chosenModule === module ? "selected" : ""}`} onClick={() => {setChosenModule(module)}}>{module.name}</button>
-                })
-              }
-              <button className={`side-panel-item ${chosenModule === "settings" ? "selected" : ""}`} onClick={() => {setChosenModule({name: "settings"})}}>settings</button>
-            </div>}
-            <div id="main">
-            </div>
+            {
+              chosenGroup.name === "settings" ? <div></div> : !Object.keys(chosenGroup).length ? "pick a group first!" : !subjectList ? "add a subject!" :<div className="side-panel subjects">
+                { 
+                  subjectList.map((subject) => { 
+                    return <button className={`side-panel-item ${chosenSubject === subject ? "selected" : ""}`} onClick={() => {setChosenSubject(subject); setChosenModule({})}}>{subject.name}</button>
+                  })
+                }
+                <button className={`side-panel-item ${chosenSubject === "settings" ? "selected" : ""}`} onClick={() => {setChosenSubject({name: "settings"}); setChosenModule({})}}>settings</button>
+              </div>
+            }
+            {
+              chosenGroup.name === "settings" || chosenSubject.name === "settings" ? <div></div> : !Object.keys(chosenSubject).length ? "pick a subject first!" : !moduleList ? "add a module!" : <div className="side-panel modules">
+                {
+                  moduleList.map((module) => { 
+                    return <button className={`side-panel-item ${chosenModule === module ? "selected" : ""}`} onClick={() => {setChosenModule(module)}}>{module.name}</button>
+                  })
+                }
+                <button className={`side-panel-item ${chosenModule === "settings" ? "selected" : ""}`} onClick={() => {setChosenModule({name: "settings"})}}>settings</button>
+              </div>
+            }
+            <SubjectsBody chosenGroup={chosenGroup} chosenSubject={chosenSubject} chosenModule={chosenModule} systems={systems}/>
           </div>
         )
       case 2:
@@ -465,12 +529,12 @@ function Body(props) {
               return (
                 <div className="body">
                   <p>
-                    username: <input type="text" id="username-input" />
+                    username: <input type="text" id="form-login-username-input" />
                   </p>
                   <p>
-                    password: <input type="text" id="password-input" />
+                    password: <input type="text" id="form-login-password-input" />
                   </p>
-                  <button className="button" id="login-submit-button" onClick={logIn}>submit</button>
+                  <button className="button" id="form-login-submit-button" onClick={logIn}>submit</button>
                   <p style={{color: "red"}}>{errorMessage}</p>
                   <p>if you don't have an account yet, sign up <a onClick={() => setSigningUp(true)}>here</a>.</p>
                 </div>
@@ -479,15 +543,15 @@ function Body(props) {
               return (
                 <div className="body">
                   <p>
-                    username: <input type="text" id="username-input" />
+                    username: <input type="text" id="form-login-username-input" />
                   </p>
                   <p>
-                    password: <input type="text" id="password-input" />
+                    password: <input type="text" id="form-login-password-input" />
                   </p>
                   <p>
-                    confirm password: <input type="text" id="password-input-confirm" />
+                    confirm password: <input type="text" id="form-login-password-input-confirm" />
                   </p>
-                  <button className="button" id="login-submit-button" onClick={signUp}>submit</button>
+                  <button className="button" id="form-login-submit-button" onClick={signUp}>submit</button>
                   <p style={{color: "red"}}>{errorMessage}</p>
                   <p>if you already have an account, log in <a onClick={() => setSigningUp(false)}>here</a>.</p>
                 </div>
