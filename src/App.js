@@ -439,7 +439,7 @@ function Body(props) {
                   subjectList.map((subject) => { 
                     return <button className={`side-panel-item ${chosenSubject === subject ? "selected" : ""}`} onClick={() => {setChosenSubject(subject); setChosenModule("")}}>{subject.name}</button>
                   })
-                  <button >settings</button>
+                  <button className={`side-panel-item ${chosenSubject === "settings" ? "selected" : ""}`} onClick={() => {setChosenSubject({name: "settings"})}}>settings</button>
                 )
               }
             </div>
