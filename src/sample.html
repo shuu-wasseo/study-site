@@ -1,0 +1,13 @@
+<div className="edit-group">
+          edit group:
+          <p>
+            name: <input type="text" id="form-editgroup-name-input" />
+          </p>
+          <p>
+            description: <input type="text" id="form-editgroup-description-input" />
+          </p>
+          <p>
+            system: <Dropdown id="form-editgroup-system-list" list={props.systems.map(prop => prop.name)}/>
+          </p>
+          <button id="form-editgroup-submit-button">edit group</button>
+        </div>

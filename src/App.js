@@ -126,7 +126,7 @@ function Dropdown(props) {
       <div class="dropdown-content">
         {
           props.list.map(system => {
-            return <button onClick={system => setChosen(system)}>{system}</button>
+            return <button onClick={() => setChosen(system)}>{system}</button>
           })
         }
       </div>
@@ -139,7 +139,7 @@ function SubjectsBody(props) {
     return (
       <div className="subjects-body">
         <div className="add-group">
-          add group
+          add group:
           <p>
             name: <input type="text" id="form-addgroup-name-input" />
           </p>
@@ -147,30 +147,72 @@ function SubjectsBody(props) {
             description: <input type="text" id="form-addgroup-description-input" />
           </p>
           <p>
-            system: <input id="form-addgroup-name-input" list="form-addgroup-system-list"/>
+            color: <input type="text" id="form-addsubject-weightage-input" />
           </p>
-          <datalist id="form-addgroup-system-list">
-            {
-              props.systems.map(system => {
-                return <option value={system.name} />
-              })
-            }
-          </datalist>
+          <p>
+            system: <Dropdown id="form-addgroup-system-list" list={props.systems.map(prop => prop.name)}/>
+          </p>
+          <button id="form-addgroup-submit-button">add group</button>
         </div>
       </div>
     )
   } else if (props.chosenSubject.name === "settings") {
     return (
-      <div>
-        group settings
-        add a subject
+      <div className="subjects-body">
+        <div className="edit-group">
+          edit group:
+          <p>
+            name: <input type="text" id="form-editgroup-name-input" />
+          </p>
+          <p>
+            description: <input type="text" id="form-editgroup-description-input" />
+          </p>
+          <p>
+            system: <Dropdown id="form-editgroup-system-list" list={props.systems.map(prop => prop.name)}/>
+          </p>
+          <button id="form-editgroup-submit-button">edit group</button>
+        </div>
+        <div className="add-subject">
+          add subject:
+          <p>
+            name: <input type="text" id="form-addsubject-name-input" />
+          </p>
+          <p>
+            weightage: <input type="text" id="form-addsubject-weightage-input" />
+          </p>
+          <p>
+            color: <input type="text" id="form-addsubject-weightage-input" />
+          </p>
+          <button id="form-addsubject-submit-button">add subject</button>
+        </div>
       </div>
     )
   } else if (props.chosenModule.name === "settings") {
     return (
       <div>
-        subject settings
-        add a module
+        <div className="edit-subject">
+          edit subject:
+          <p>
+            name: <input type="text" id="form-editsubject-name-input" />
+          </p>
+          <p>
+            weightage: <input type="text" id="form-editsubject-description-input" />
+          </p>
+          <p>
+            color: <input type="text" id="form-editsubject-description-input" />
+          </p>
+          <button id="form-editsubject-submit-button">edit subject</button>
+        </div>
+        <div className="add-module">
+          add module:
+          <p>
+            name: <input type="text" id="form-addmodule-name-input" />
+          </p>
+          <p>
+            weightage: <input type="text" id="form-addmodule-weightage-input" />
+          </p>
+          <button id="form-addmodule-submit-button">add module</button>
+        </div>
       </div>
     )
   }
@@ -285,6 +327,7 @@ function Body(props) {
         addGroup(givenUsername, {
           name: "sample group",
           description: "sample description",
+          color: "#ffffff",
           system: "MSG"
         });
         addSubject(givenUsername, "sample group", {
@@ -295,6 +338,7 @@ function Body(props) {
         addModule(givenUsername, "sample group", "sample subject", {
           name: "sample module",
           tier: 0,
+          colour: "#ffffff",
           weightage: 1,
           records: {
             "1702651632011": 0
@@ -491,7 +535,7 @@ function Body(props) {
                   return <button className={`side-panel-item ${chosenGroup === group ? "selected" : ""}`} onClick={() => {setChosenGroup(group); setChosenSubject({}); setChosenModule({})}}>{group.name}</button>
                 })
               }
-              <button className={`side-panel-item ${chosenGroup === "settings" ? "selected" : ""}`} onClick={() => {setChosenGroup({name: "settings"}); setChosenSubject({}); setChosenModule({})}}>settings</button>
+              <button className={`side-panel-item ${chosenGroup === "settings" ? "selected" : ""}`} onClick={() => {setChosenGroup({name: "settings"}); setChosenSubject({}); setChosenModule({})}}>overall settings</button>
             </div>
             {
               chosenGroup.name === "settings" ? <div></div> : !Object.keys(chosenGroup).length ? "pick a group first!" : !subjectList ? "add a subject!" :<div className="side-panel subjects">
@@ -500,7 +544,7 @@ function Body(props) {
                     return <button className={`side-panel-item ${chosenSubject === subject ? "selected" : ""}`} onClick={() => {setChosenSubject(subject); setChosenModule({})}}>{subject.name}</button>
                   })
                 }
-                <button className={`side-panel-item ${chosenSubject === "settings" ? "selected" : ""}`} onClick={() => {setChosenSubject({name: "settings"}); setChosenModule({})}}>settings</button>
+                <button className={`side-panel-item ${chosenSubject === "settings" ? "selected" : ""}`} onClick={() => {setChosenSubject({name: "settings"}); setChosenModule({})}}>group settings</button>
               </div>
             }
             {
@@ -510,7 +554,7 @@ function Body(props) {
                     return <button className={`side-panel-item ${chosenModule === module ? "selected" : ""}`} onClick={() => {setChosenModule(module)}}>{module.name}</button>
                   })
                 }
-                <button className={`side-panel-item ${chosenModule === "settings" ? "selected" : ""}`} onClick={() => {setChosenModule({name: "settings"})}}>settings</button>
+                <button className={`side-panel-item ${chosenModule === "settings" ? "selected" : ""}`} onClick={() => {setChosenModule({name: "settings"})}}>subject settings</button>
               </div>
             }
             <SubjectsBody chosenGroup={chosenGroup} chosenSubject={chosenSubject} chosenModule={chosenModule} systems={systems}/>
