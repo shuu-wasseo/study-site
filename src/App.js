@@ -505,7 +505,7 @@ function Body(props) {
   }
  
   if (props.error) {
-    return ("lmfao error")
+    return (<p className='body'>lmfao error</p>)
   } else if (props.loading) {
     return (
       <div className="body"> 
