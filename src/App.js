@@ -61,7 +61,7 @@ function checkLoggedIn(users, cookie) {
   }
 }
 
-function checkUsername(users,cookie) {
+function checkUsername(users, cookie) {
   if (!cookie) {
     return "No username found"
   }
@@ -624,7 +624,7 @@ function Body(props) {
                 <button className={`side-panel-item ${chosenModule === "settings" ? "selected" : ""}`} onClick={() => {setChosenModule({name: "settings"})}}>subject settings</button>
               </div>
             }
-            <SubjectsBody username={checkUsername(users, Cookies.get("logIn"))} groupList={groupList} subjectList={subjectList} moduleList={moduleList} chosenGroup={chosenGroup} chosenSubject={chosenSubject} chosenModule={chosenModule} systems={systems}/>
+            <SubjectsBody username={checkUsername(users, Cookies.get("loggedIn"))} groupList={groupList} subjectList={subjectList} moduleList={moduleList} chosenGroup={chosenGroup} chosenSubject={chosenSubject} chosenModule={chosenModule} systems={systems}/>
           </div>
         )
       case 2:
