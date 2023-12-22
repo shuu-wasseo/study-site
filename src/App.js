@@ -308,7 +308,7 @@ function Body(props) {
       console.error(e)
     }
 
-  }, [errorMessage, users])
+  }, [errorMessage])
 
   useEffect(() => {
     try {
@@ -572,7 +572,7 @@ function Body(props) {
   }
  
   if (props.error) {
-    return (<p className='body'>lmfao error</p>)
+    return (<p className='body'>{String(props.error)}</p>)
   } else if (props.loading) {
     return (
       <div className="body"> 
@@ -599,7 +599,7 @@ function Body(props) {
             <div className="side-panel groups">
               {
                 groupList.map((group) => { 
-                  return <button className={`side-panel-item ${chosenGroup === group ? "selected" : ""}` style={{color: group.color}} onClick={() => {setChosenGroup(group); setChosenSubject({}); setChosenModule({})}}>{group.name}</button>
+                  return <button className={`side-panel-item ${chosenGroup === group ? "selected" : ""}`} style={{color: group.color}} onClick={() => {setChosenGroup(group); setChosenSubject({}); setChosenModule({})}}>{group.name}</button>
                 })
               }
               <button className={`side-panel-item ${chosenGroup === "settings" ? "selected" : ""}`} onClick={() => {setChosenGroup({name: "settings"}); setChosenSubject({}); setChosenModule({})}}>overall settings</button>
@@ -608,7 +608,7 @@ function Body(props) {
               chosenGroup.name === "settings" ? <div></div> : !Object.keys(chosenGroup).length ? "pick a group first!" : !subjectList ? "add a subject!" :<div className="side-panel subjects">
                 { 
                   subjectList.map((subject) => { 
-                    return <button className={`side-panel-item ${chosenSubject === subject ? "selected" : ""}`} style={{color: group.color}} onClick={() => {setChosenSubject(subject); setChosenModule({})}}>{subject.name}</button>
+                    return <button className={`side-panel-item ${chosenSubject === subject ? "selected" : ""}`} style={{color: subject.color}} onClick={() => {setChosenSubject(subject); setChosenModule({})}}>{subject.name}</button>
                   })
                 }
                 <button className={`side-panel-item ${chosenSubject === "settings" ? "selected" : ""}`} onClick={() => {setChosenSubject({name: "settings"}); setChosenModule({})}}>group settings</button>
@@ -618,7 +618,7 @@ function Body(props) {
               chosenGroup.name === "settings" || chosenSubject.name === "settings" ? <div></div> : !Object.keys(chosenSubject).length ? "pick a subject first!" : !moduleList ? "add a module!" : <div className="side-panel modules">
                 {
                   moduleList.map((module) => { 
-                    return <button className={`side-panel-item ${chosenModule === module ? "selected" : ""}`} style={{color: group.color}} onClick={() => {setChosenModule(module)}}>{module.name}</button>
+                    return <button className={`side-panel-item ${chosenModule === module ? "selected" : ""}`} style={{color: module.color}} onClick={() => {setChosenModule(module)}}>{module.name}</button>
                   })
                 }
                 <button className={`side-panel-item ${chosenModule === "settings" ? "selected" : ""}`} onClick={() => {setChosenModule({name: "settings"})}}>subject settings</button>
@@ -698,7 +698,7 @@ function App() {
   const navbar = (
     <div className="navbar">
       <div className="header left">
-        <button className="header-children" onClick={() => setTab(0)}>logo</button>
+        <button className="header-children" onClick={() => setTab(0)}>home</button>
         <button className="header-children" onClick={() => setTab(1)}>subjects</button> 
         <button className="header-children" onClick={() => setTab(2)}>stats</button> 
       </div>
