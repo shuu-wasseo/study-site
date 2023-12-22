@@ -242,9 +242,9 @@ function SubjectsBody(props) {
           </p>
           <button id="form-addmodule-submit-button" onClick={
             editGroup(props.username, {
-              name: document.getelementbyid("form-addmodule-name-input"),
+              name: document.getElementById("form-addmodule-name-input"),
               weightage: Number(document.getElementById("form-addmodule-weightage-input")),
-              color: document.getelementbyid("form-addmodule-color-input"),
+              color: document.getElementById("form-addmodule-color-input"),
             })
           }>add module</button>
         </div>
@@ -265,7 +265,7 @@ function SubjectsBody(props) {
             editGroup(props.username, {
               name: props.chosenModule.name,
               weightage: Number(document.getElementById("form-editmodule-weightage-input")),
-              color: document.getelementbyid("form-editmodule-color-input"),
+              color: document.getElementById("form-editmodule-color-input"),
             })
           }>edit`` module</button>
         </div>
@@ -615,7 +615,7 @@ function Body(props) {
               </div>
             }
             {
-              chosenGroup.name === "settings" || chosenSubject.name === "settings" ? <div></div> : !Object.keys(chosenSubject).length ? "pick a subject first!" : !moduleList ? "add a module!" : <div className="side-panel modules">
+              chosenGroup.name === "settings" || chosenSubject.name === "settings" ? <div></div> : !Object.keys(chosenSubject).length ? (Object.keys(chosenGroup).length ? "pick a subject first!" : "") : !moduleList ? "add a module!" : <div className="side-panel modules">
                 {
                   moduleList.map((module) => { 
                     return <button className={`side-panel-item ${chosenModule === module ? "selected" : ""}`} style={{color: module.color}} onClick={() => {setChosenModule(module)}}>{module.name}</button>
@@ -643,7 +643,7 @@ function Body(props) {
                     username: <input type="text" id="form-login-username-input" />
                   </p>
                   <p>
-                    password: <input type="text" id="form-login-password-input" />
+                    password: <input type="password" id="form-login-password-input" />
                   </p>
                   <button className="button" id="form-login-submit-button" onClick={logIn}>submit</button>
                   <p style={{color: "red"}}>{errorMessage}</p>
@@ -657,10 +657,10 @@ function Body(props) {
                     username: <input type="text" id="form-login-username-input" />
                   </p>
                   <p>
-                    password: <input type="text" id="form-login-password-input" />
+                    password: <input type="password" id="form-login-password-input" />
                   </p>
                   <p>
-                    confirm password: <input type="text" id="form-login-password-input-confirm" />
+                    confirm password: <input type="password" id="form-login-password-input-confirm" />
                   </p>
                   <button className="button" id="form-login-submit-button" onClick={signUp}>submit</button>
                   <p style={{color: "red"}}>{errorMessage}</p>
