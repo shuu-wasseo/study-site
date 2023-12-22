@@ -23,6 +23,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 async function fetchData(params, func, setLoading, setError) {
+  console.log('fetching data', params, func, setLoading, setError)
   try {
     const ncollection = await getDocs(collection(db, "users/" + params.join("/")))
     let modifiedCollection = []
@@ -82,7 +83,7 @@ function checkUsername(users,cookie) {
   }
 }
 
-function addGroup(username, data) {
+function editGroup(username, data) {
   try {
     setDoc(doc(db, "users", username, "groups", data.name), data);
   } catch (error) {
@@ -90,7 +91,7 @@ function addGroup(username, data) {
   }
 }
 
-function addSubject(username, groupname, data) {
+function editSubject(username, groupname, data) {
   try {
     setDoc(doc(db, "users", username, "groups", groupname, "subjects", data.name), data);
   } catch (error) {
@@ -98,7 +99,7 @@ function addSubject(username, groupname, data) {
   }
 }
 
-function addModule(username, groupname, subjectname, data) {
+function editModule(username, groupname, subjectname, data) {
   try {
     setDoc(doc(db, "users", username, "groups", groupname, "subjects", subjectname, "modules", data.name), data);
   } catch (error) {
@@ -106,7 +107,7 @@ function addModule(username, groupname, subjectname, data) {
   }
 }
 
-function addSystem(username, data) {
+function editSystem(username, data) {
   try {
     setDoc(doc(db, "users", username, "systems", data.name), data);
   } catch (error) {
@@ -122,7 +123,7 @@ function Dropdown(props) {
   const [chosen, setChosen] = useState(props.list[0])
   return (
     <div class="dropdown">
-      <button class="dropbtn">{chosen}</button>
+      <button class="dropbtn" id={props.id+"-chosen"}>{chosen}</button>
       <div class="dropdown-content">
         {
           props.list.map(system => {
@@ -135,6 +136,8 @@ function Dropdown(props) {
 }
 
 function SubjectsBody(props) {
+  const [color, setColor] = useState(Math.floor(Math.random()*16777215).toString(16))
+
   if (props.chosenGroup.name === "settings") {
     return (
       <div className="subjects-body">
@@ -146,13 +149,20 @@ function SubjectsBody(props) {
           <p>
             description: <input type="text" id="form-addgroup-description-input" />
           </p>
-          <p>
-            color: <input type="text" id="form-addsubject-weightage-input" />
+          <p style={{color: color}}>
+            color: <input type="text" id="form-addsubject-color-input" onChange={e => setColor(e.target.value)}/>
           </p>
           <p>
             system: <Dropdown id="form-addgroup-system-list" list={props.systems.map(prop => prop.name)}/>
           </p>
-          <button id="form-addgroup-submit-button">add group</button>
+          <button id="form-addgroup-submit-button" onClick={
+            editGroup(props.username, {
+              name: document.getElementById("form-addgroup-name-input"),
+              description: document.getElementById("form-addgroup-description-input"),
+              color: document.getElementById("form-addgroup-color-input"),
+              system: document.getElementById("form-addgroup-system-input-chosen")
+            })
+          }>add group</button>
         </div>
       </div>
     )
@@ -162,15 +172,22 @@ function SubjectsBody(props) {
         <div className="edit-group">
           edit group:
           <p>
-            name: <input type="text" id="form-editgroup-name-input" />
-          </p>
-          <p>
             description: <input type="text" id="form-editgroup-description-input" />
+          </p>
+          <p style={{color: color}}>
+            color: <input type="text" id="form-editgroup-color-input" onChange={e => setColor(e.target.value)}/>
           </p>
           <p>
             system: <Dropdown id="form-editgroup-system-list" list={props.systems.map(prop => prop.name)}/>
           </p>
-          <button id="form-editgroup-submit-button">edit group</button>
+          <button id="form-editgroup-submit-button" onClick={
+            editGroup(props.username, {
+              name: props.chosenGroup.name,
+              description: document.getElementById("form-editgroup-description-input"),
+              color: document.getElementById("form-editgroup-color-input"),
+              system: document.getElementById("form-editgroup-system-input-chosen")
+            })
+          }>edit group</button>
         </div>
         <div className="add-subject">
           add subject:
@@ -180,28 +197,37 @@ function SubjectsBody(props) {
           <p>
             weightage: <input type="text" id="form-addsubject-weightage-input" />
           </p>
-          <p>
-            color: <input type="text" id="form-addsubject-weightage-input" />
+          <p style={{color: color}}>
+            color: <input type="text" id="form-addsubject-color-input" onChange={e => setColor(e.target.value)}/>
           </p>
-          <button id="form-addsubject-submit-button">add subject</button>
+          <button id="form-addsubject-submit-button" onClick={
+            editGroup(props.username, {
+              name: document.getElementById("form-addsubject-name-input"),
+              weightage: Number(document.getElementById("form-addsubject-weightage-input")),
+              color: document.getElementById("form-addsubject-color-input"),
+            })
+          }>add subject</button>
         </div>
       </div>
     )
   } else if (props.chosenModule.name === "settings") {
     return (
-      <div>
+      <div className="subjects-body">
         <div className="edit-subject">
           edit subject:
           <p>
-            name: <input type="text" id="form-editsubject-name-input" />
+            weightage: <input type="text" id="form-editsubject-weightage-input" />
           </p>
-          <p>
-            weightage: <input type="text" id="form-editsubject-description-input" />
+          <p style={{color: color}}>
+            color: <input type="text" id="form-editsubject-color-input" onChange={e => setColor(e.target.value)}/>
           </p>
-          <p>
-            color: <input type="text" id="form-editsubject-description-input" />
-          </p>
-          <button id="form-editsubject-submit-button">edit subject</button>
+          <button id="form-editsubject-submit-button" onClick={
+            editGroup(props.username, {
+              name: props.chosenSubject.name,
+              weightage: Number(document.getElementById("form-editsubject-weightage-input")),
+              color: document.getElementById("form-editsubject-color-input"),
+            })
+          }>edit subject</button>
         </div>
         <div className="add-module">
           add module:
@@ -211,7 +237,37 @@ function SubjectsBody(props) {
           <p>
             weightage: <input type="text" id="form-addmodule-weightage-input" />
           </p>
-          <button id="form-addmodule-submit-button">add module</button>
+          <p style={{color: color}}>
+            color: <input type="text" id="form-addmodule-color-input" onChange={e => setColor(e.target.value)}/>
+          </p>
+          <button id="form-addmodule-submit-button" onClick={
+            editGroup(props.username, {
+              name: document.getelementbyid("form-addmodule-name-input"),
+              weightage: Number(document.getElementById("form-addmodule-weightage-input")),
+              color: document.getelementbyid("form-addmodule-color-input"),
+            })
+          }>add module</button>
+        </div>
+      </div>
+    )
+  } else {
+    return (
+      <div className="subjects-body">
+        <div className="edit-module">
+          edit module:
+          <p>
+            weightage: <input type="text" id="form-editmondule-weightage-input" />
+          </p>
+          <p style={{color: color}}>
+            color: <input type="text" id="form-editmondule-color-input" onChange={e => setColor(e.target.value)}/> 
+          </p>
+          <button id="form-editmondule-submit-button" onClick={
+            editGroup(props.username, {
+              name: props.chosenModule.name,
+              weightage: Number(document.getElementById("form-editmodule-weightage-input")),
+              color: document.getelementbyid("form-editmodule-color-input"),
+            })
+          }>edit`` module</button>
         </div>
       </div>
     )
@@ -246,19 +302,30 @@ function Body(props) {
       let username = JSON.parse(Cookies.get("loggedIn")).username
       if (checkLoggedIn(users, Cookies.get("loggedIn")) && props.tab === 1) {
         fetchData([username, "groups"], setGroupList, setLoading, setError)
-        if (Object.keys(chosenGroup).length) {
-          fetchData([username, "groups", chosenGroup.name, "subjects"], setSubjectList, setLoading, setError)
-        }
-        if (Object.keys(chosenSubject).length) {
-          fetchData([username, "groups", chosenGroup.name, "subjects", chosenSubject.name, "modules"], setModuleList, setLoading, setError)
-        }
         fetchData([username, "systems"], setSystems, setLoading, setError)
       }
     } catch(e) {
       console.error(e)
     }
 
-  }, [errorMessage, users, chosenGroup, chosenSubject])
+  }, [errorMessage, users])
+
+  useEffect(() => {
+    try {
+      let username = JSON.parse(Cookies.get("loggedIn")).username
+      if (checkLoggedIn(users, Cookies.get("loggedIn")) && props.tab === 1) {
+        if (Object.keys(chosenGroup).length) {
+          fetchData([username, "groups", chosenGroup.name, "subjects"], setSubjectList, setLoading, setError)
+        }
+        if (Object.keys(chosenSubject).length) {
+          fetchData([username, "groups", chosenGroup.name, "subjects", chosenSubject.name, "modules"], setModuleList, setLoading, setError)
+        }
+      }
+    } catch(e) {
+      console.error(e)
+    }
+
+  }, [chosenGroup, chosenSubject])
 
   function logIn() {
     setErrorMessage("")
@@ -324,163 +391,163 @@ function Body(props) {
             profile_image: "https://i.pinimg.com/custom_covers/222x/85498161615209203_1636332751.jpg"
           },
         })
-        addGroup(givenUsername, {
+        editGroup(givenUsername, {
           name: "sample group",
           description: "sample description",
           color: "#ffffff",
           system: "MSG"
         });
-        addSubject(givenUsername, "sample group", {
+        editSubject(givenUsername, "sample group", {
           name: "sample subject",
           weightage: 1,
-          colour: "#ffffff"
+          color: "#ffffff"
         });
-        addModule(givenUsername, "sample group", "sample subject", {
+        editModule(givenUsername, "sample group", "sample subject", {
           name: "sample module",
           tier: 0,
-          colour: "#ffffff",
           weightage: 1,
+          color: "#ffffff",
           records: {
             "1702651632011": 0
           }
         });
-        addSystem(givenUsername, {
+        editSystem(givenUsername, {
           name: "MSG", bands: {
             A1: {
               condition: "(i) => {return i >= 75}", 
-              colour: "#ff0000",
+              color: "#ff0000",
             },
             A2: {
               condition: "(i) => {return i >= 70 && i < 75}", 
-              colour: "#ffaa00"
+              color: "#ffaa00"
             },
             B3: {
               condition: "(i) => {return i >= 65 && i < 70}", 
-              colour: "#aaff00"
+              color: "#aaff00"
             },
             B4: {
               condition: "(i) => {return i >= 60 && i < 65}", 
-              colour: "#00ff00"
+              color: "#00ff00"
             }, 
             C5: {
               condition: "(i) => {return i >= 55 && i < 60}", 
-              colour: "#00ffaa"
+              color: "#00ffaa"
             }, 
             C6: {
               condition: "(i) => {return i >= 50 && i < 55}", 
-              colour: "#00aaff"
+              color: "#00aaff"
             }, 
             D7: {
               condition: "(i) => {return i >= 45 && i < 50}", 
-              colour: "#0000ff"
+              color: "#0000ff"
             }, 
             E8: {
               condition: "(i) => {return i >= 40 && i < 45}", 
-              colour: "#aa00ff"
+              color: "#aa00ff"
             }, 
             F9: {
               condition: "(i) => {return i < 40}", 
-              colour: "#ff00aa"
+              color: "#ff00aa"
             }
           }
         });
-        addSystem(givenUsername, {
+        editSystem(givenUsername, {
           name: "GPA 1", bands: {
             "A+": {
               condition: "(i) => {return i >= 80}", 
-              colour: "#a65bf5"
+              color: "#a65bf5"
             },
             A: {
               condition: "(i) => {return i >= 70 && i < 80}", 
-              colour: "#a53ef4"
+              color: "#a53ef4"
             },
             "B+": {
               condition: "(i) => {return i >= 65 && i < 70}", 
-              colour: "#a921f2"
+              color: "#a921f2"
             },
             B: {
               condition: "(i) => {return i >= 60 && i < 65}", 
-              colour: "#ad0de7"
+              color: "#ad0de7"
             },
             "C+": {
               condition: "(i) => {return i >= 55 && i < 60}", 
-              colour: "#a65bf5"
+              color: "#a65bf5"
             },
             C: {
               condition: "(i) => {return i >= 50 && i < 55}", 
-              colour: "#a70cca"
+              color: "#a70cca"
             },
             D: {
               condition: "(i) => {return i >= 45 && i < 50}", 
-              colour: "#9d0aae"
+              color: "#9d0aae"
             },
             E: {
               condition: "(i) => {return i >= 40 && i < 45}", 
-              colour: "#8e0891"
+              color: "#8e0891"
             },
             F: {
               condition: "(i) => {return i < 40}", 
-              colour: "#74076c"
+              color: "#74076c"
             }
           }
         });
-        addSystem(givenUsername, {
+        editSystem(givenUsername, {
           name: "GPA 2", bands: {
             "A+": {
               condition: "(i) => {return i >= 85}", 
-              colour: "#2bf3d1"
+              color: "#2bf3d1"
             },
             A: {
               condition: "(i) => {return i >= 70 && i < 85}", 
-              colour: "#19e6d8"
+              color: "#19e6d8"
             },
             "B+": {
               condition: "(i) => {return i >= 65 && i < 70}", 
-              colour: "#21bbc0"
+              color: "#21bbc0"
             },
             B: {
               condition: "(i) => {return i >= 60 && i < 65}", 
-              colour: "#258d9d"
+              color: "#258d9d"
             },
             "C+": {
               condition: "(i) => {return i >= 55 && i < 60}", 
-              colour: "#26697d"
+              color: "#26697d"
             },
             C: {
               condition: "(i) => {return i >= 50 && i < 55}", 
-              colour: "#254c5f"
+              color: "#254c5f"
             },
             "C-": {
               condition: "(i) => {return i >= 45 && i < 50}", 
-              colour: "#213545"
+              color: "#213545"
             },
             "D+": {
               condition: "(i) => {return i >= 40 && i < 45}", 
-              colour: "#1a232d"
+              color: "#1a232d"
             },
             D: {
               condition: "(i) => {return i >= 35 && i < 40}", 
-              colour: "#1a212d"
+              color: "#1a212d"
             },
             E: {
               condition: "(i) => {return i >= 20 && i < 35}", 
-              colour: "#1a1f2d"
+              color: "#1a1f2d"
             },
             U: {
               condition: "(i) => {return i < 20}", 
-              colour: "#1a1e2d"
+              color: "#1a1e2d"
             }
           }
         });
-        addSystem(givenUsername, {
+        editSystem(givenUsername, {
           name: "yesAndNo", bands: {
             "Yes": {
               condition: "(i) => {return i == 100}", 
-              colour: "#00ff33"
+              color: "#00ff33"
             },
             "No": {
               condition: "(i) => {return i == 0}", 
-              colour: "#ff0000"
+              color: "#ff0000"
             }
           }
         })
@@ -532,7 +599,7 @@ function Body(props) {
             <div className="side-panel groups">
               {
                 groupList.map((group) => { 
-                  return <button className={`side-panel-item ${chosenGroup === group ? "selected" : ""}`} onClick={() => {setChosenGroup(group); setChosenSubject({}); setChosenModule({})}}>{group.name}</button>
+                  return <button className={`side-panel-item ${chosenGroup === group ? "selected" : ""}` style={{color: group.color}} onClick={() => {setChosenGroup(group); setChosenSubject({}); setChosenModule({})}}>{group.name}</button>
                 })
               }
               <button className={`side-panel-item ${chosenGroup === "settings" ? "selected" : ""}`} onClick={() => {setChosenGroup({name: "settings"}); setChosenSubject({}); setChosenModule({})}}>overall settings</button>
@@ -541,7 +608,7 @@ function Body(props) {
               chosenGroup.name === "settings" ? <div></div> : !Object.keys(chosenGroup).length ? "pick a group first!" : !subjectList ? "add a subject!" :<div className="side-panel subjects">
                 { 
                   subjectList.map((subject) => { 
-                    return <button className={`side-panel-item ${chosenSubject === subject ? "selected" : ""}`} onClick={() => {setChosenSubject(subject); setChosenModule({})}}>{subject.name}</button>
+                    return <button className={`side-panel-item ${chosenSubject === subject ? "selected" : ""}`} style={{color: group.color}} onClick={() => {setChosenSubject(subject); setChosenModule({})}}>{subject.name}</button>
                   })
                 }
                 <button className={`side-panel-item ${chosenSubject === "settings" ? "selected" : ""}`} onClick={() => {setChosenSubject({name: "settings"}); setChosenModule({})}}>group settings</button>
@@ -551,13 +618,13 @@ function Body(props) {
               chosenGroup.name === "settings" || chosenSubject.name === "settings" ? <div></div> : !Object.keys(chosenSubject).length ? "pick a subject first!" : !moduleList ? "add a module!" : <div className="side-panel modules">
                 {
                   moduleList.map((module) => { 
-                    return <button className={`side-panel-item ${chosenModule === module ? "selected" : ""}`} onClick={() => {setChosenModule(module)}}>{module.name}</button>
+                    return <button className={`side-panel-item ${chosenModule === module ? "selected" : ""}`} style={{color: group.color}} onClick={() => {setChosenModule(module)}}>{module.name}</button>
                   })
                 }
                 <button className={`side-panel-item ${chosenModule === "settings" ? "selected" : ""}`} onClick={() => {setChosenModule({name: "settings"})}}>subject settings</button>
               </div>
             }
-            <SubjectsBody chosenGroup={chosenGroup} chosenSubject={chosenSubject} chosenModule={chosenModule} systems={systems}/>
+            <SubjectsBody username={checkUsername(users, Cookies.get("logIn"))} groupList={groupList} subjectList={subjectList} moduleList={moduleList} chosenGroup={chosenGroup} chosenSubject={chosenSubject} chosenModule={chosenModule} systems={systems}/>
           </div>
         )
       case 2:
