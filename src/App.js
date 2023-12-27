@@ -23,7 +23,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 async function fetchData(params, func, setLoading, setError) {
-  console.log('fetching data', params, func, setLoading, setError)
   try {
     const ncollection = await getDocs(collection(db, "users/" + params.join("/")))
     let modifiedCollection = []
@@ -122,7 +121,7 @@ function getKey(object, value) {
 function Dropdown(props) {
   const [chosen, setChosen] = useState(props.list[0])
   return (
-    <div class="dropdown">
+    <div className="dropdown">
       <button class="dropbtn" id={props.id+"-chosen"}>{chosen}</button>
       <div class="dropdown-content">
         {
@@ -137,24 +136,24 @@ function Dropdown(props) {
 
 function SubjectsBody(props) {
   const [color, setColor] = useState(Math.floor(Math.random()*16777215).toString(16))
-
+  
   if (props.chosenGroup.name === "settings") {
     return (
       <div className="subjects-body">
         <div className="add-group">
           add group:
-          <p>
+          <div>
             name: <input type="text" id="form-addgroup-name-input" />
-          </p>
-          <p>
+          </div>
+          <div>
             description: <input type="text" id="form-addgroup-description-input" />
-          </p>
-          <p style={{color: color}}>
+          </div>
+          <div style={{color: color}}>
             color: <input type="text" id="form-addsubject-color-input" onChange={e => setColor(e.target.value)}/>
-          </p>
-          <p>
+          </div>
+          <div>
             system: <Dropdown id="form-addgroup-system-list" list={props.systems.map(prop => prop.name)}/>
-          </p>
+          </div>
           <button id="form-addgroup-submit-button" onClick={
             editGroup(props.username, {
               name: document.getElementById("form-addgroup-name-input"),
@@ -171,15 +170,15 @@ function SubjectsBody(props) {
       <div className="subjects-body">
         <div className="edit-group">
           edit group:
-          <p>
+          <div>
             description: <input type="text" id="form-editgroup-description-input" />
-          </p>
-          <p style={{color: color}}>
+          </div>
+          <div style={{color: color}}>
             color: <input type="text" id="form-editgroup-color-input" onChange={e => setColor(e.target.value)}/>
-          </p>
-          <p>
+          </div>
+          <div>
             system: <Dropdown id="form-editgroup-system-list" list={props.systems.map(prop => prop.name)}/>
-          </p>
+          </div>
           <button id="form-editgroup-submit-button" onClick={
             editGroup(props.username, {
               name: props.chosenGroup.name,
@@ -191,15 +190,15 @@ function SubjectsBody(props) {
         </div>
         <div className="add-subject">
           add subject:
-          <p>
+          <div>
             name: <input type="text" id="form-addsubject-name-input" />
-          </p>
-          <p>
+          </div>
+          <div>
             weightage: <input type="text" id="form-addsubject-weightage-input" />
-          </p>
-          <p style={{color: color}}>
+          </div>
+          <div style={{color: color}}>
             color: <input type="text" id="form-addsubject-color-input" onChange={e => setColor(e.target.value)}/>
-          </p>
+          </div>
           <button id="form-addsubject-submit-button" onClick={
             editGroup(props.username, {
               name: document.getElementById("form-addsubject-name-input"),
@@ -215,12 +214,12 @@ function SubjectsBody(props) {
       <div className="subjects-body">
         <div className="edit-subject">
           edit subject:
-          <p>
+          <div>
             weightage: <input type="text" id="form-editsubject-weightage-input" />
-          </p>
-          <p style={{color: color}}>
+          </div>
+          <div style={{color: color}}>
             color: <input type="text" id="form-editsubject-color-input" onChange={e => setColor(e.target.value)}/>
-          </p>
+          </div>
           <button id="form-editsubject-submit-button" onClick={
             editGroup(props.username, {
               name: props.chosenSubject.name,
@@ -231,15 +230,15 @@ function SubjectsBody(props) {
         </div>
         <div className="add-module">
           add module:
-          <p>
+          <div>
             name: <input type="text" id="form-addmodule-name-input" />
-          </p>
-          <p>
+          </div>
+          <div>
             weightage: <input type="text" id="form-addmodule-weightage-input" />
-          </p>
-          <p style={{color: color}}>
+          </div>
+          <div style={{color: color}}>
             color: <input type="text" id="form-addmodule-color-input" onChange={e => setColor(e.target.value)}/>
-          </p>
+          </div>
           <button id="form-addmodule-submit-button" onClick={
             editGroup(props.username, {
               name: document.getElementById("form-addmodule-name-input"),
@@ -250,24 +249,24 @@ function SubjectsBody(props) {
         </div>
       </div>
     )
-  } else {
+  } else if (props.chosenGroup.name && props.chosenSubject.name && props.chosenModule.name) {
     return (
       <div className="subjects-body">
         <div className="edit-module">
           edit module:
-          <p>
+          <div>
             weightage: <input type="text" id="form-editmondule-weightage-input" />
-          </p>
-          <p style={{color: color}}>
+          </div>
+          <div style={{color: color}}>
             color: <input type="text" id="form-editmondule-color-input" onChange={e => setColor(e.target.value)}/> 
-          </p>
+          </div>
           <button id="form-editmondule-submit-button" onClick={
             editGroup(props.username, {
               name: props.chosenModule.name,
               weightage: Number(document.getElementById("form-editmodule-weightage-input")),
               color: document.getElementById("form-editmodule-color-input"),
             })
-          }>edit`` module</button>
+          }>edit module</button>
         </div>
       </div>
     )
@@ -278,6 +277,7 @@ function Body(props) {
   const [users, setUsers] = useState(props.users)
 
   const [loading, setLoading] = useState(true);
+  const [loadingGroups, setLoadingGroups] = useState(null)
   const [error, setError] = useState(null);
 
   const [loggedIn, setLoggedIn] = useState(checkLoggedIn(users, Cookies.get("loggedIn")))
@@ -292,7 +292,7 @@ function Body(props) {
   const [chosenSubject, setChosenSubject] = useState({})
   const [chosenModule, setChosenModule] = useState({})
 
-  const [systems, setSystems] = useState({})
+  const [systems, setSystems] = useState([])
 
   useEffect(() => {
     setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
@@ -315,16 +315,16 @@ function Body(props) {
       let username = JSON.parse(Cookies.get("loggedIn")).username
       if (checkLoggedIn(users, Cookies.get("loggedIn")) && props.tab === 1) {
         if (Object.keys(chosenGroup).length) {
-          fetchData([username, "groups", chosenGroup.name, "subjects"], setSubjectList, setLoading, setError)
+          fetchData([username, "groups", chosenGroup.name, "subjects"], setSubjectList, setLoadingGroups, setError)
         }
         if (Object.keys(chosenSubject).length) {
-          fetchData([username, "groups", chosenGroup.name, "subjects", chosenSubject.name, "modules"], setModuleList, setLoading, setError)
+          fetchData([username, "groups", chosenGroup.name, "subjects", chosenSubject.name, "modules"], setModuleList, setLoadingGroups, setError)
         }
       }
+      console.log("set groups and subject", loadingGroups)
     } catch(e) {
       console.error(e)
     }
-
   }, [chosenGroup, chosenSubject])
 
   function logIn() {
@@ -572,7 +572,7 @@ function Body(props) {
   }
  
   if (props.error) {
-    return (<p className='body'>{String(props.error)}</p>)
+    return (<div className='body'>{String(props.error)}</div>)
   } else if (props.loading) {
     return (
       <div className="body"> 
@@ -594,6 +594,14 @@ function Body(props) {
           </div>
         )
       case 1:
+        console.log(loadingGroups)
+        if (loadingGroups) {
+          return (
+            <div className="body"> 
+              loading...
+            </div>
+          )
+        }
         return (
           <div className="body">
             <div className="side-panel groups">
@@ -639,32 +647,32 @@ function Body(props) {
             if (!signingUp) {
               return (
                 <div className="body">
-                  <p>
+                  <div>
                     username: <input type="text" id="form-login-username-input" />
-                  </p>
-                  <p>
+                  </div>
+                  <div>
                     password: <input type="password" id="form-login-password-input" />
-                  </p>
+                  </div>
                   <button className="button" id="form-login-submit-button" onClick={logIn}>submit</button>
-                  <p style={{color: "red"}}>{errorMessage}</p>
-                  <p>if you don't have an account yet, sign up <a onClick={() => setSigningUp(true)}>here</a>.</p>
+                  <div style={{color: "red"}}>{errorMessage}</div>
+                  <div>if you don't have an account yet, sign up <a onClick={() => setSigningUp(true)}>here</a>.</div>
                 </div>
               )
             } else {
               return (
                 <div className="body">
-                  <p>
+                  <div>
                     username: <input type="text" id="form-login-username-input" />
-                  </p>
-                  <p>
+                  </div>
+                  <div>
                     password: <input type="password" id="form-login-password-input" />
-                  </p>
-                  <p>
+                  </div>
+                  <div>
                     confirm password: <input type="password" id="form-login-password-input-confirm" />
-                  </p>
+                  </div>
                   <button className="button" id="form-login-submit-button" onClick={signUp}>submit</button>
-                  <p style={{color: "red"}}>{errorMessage}</p>
-                  <p>if you already have an account, log in <a onClick={() => setSigningUp(false)}>here</a>.</p>
+                  <div style={{color: "red"}}>{errorMessage}</div>
+                  <div>if you already have an account, log in <a onClick={() => setSigningUp(false)}>here</a>.</div>
                 </div>
               )
             }
