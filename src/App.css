@@ -96,6 +96,50 @@ button, .button {
   height: 100%;
 }
 
+.dropbtn {
+  cursor: pointer;
+}
+
+.dropbtn::after {
+  content: '▼';
+  margin-left: 5px;
+}
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-content {
+  background-color: #2c2d41;
+  display: none;
+  position: absolute;
+  min-width: 160px;
+  z-index: 2;
+}
+
+.dropdown-content button {
+  width: 100%;
+  padding: 8px 8px;
+  margin: 0px;
+  display: block;
+  border-radius: 0px;
+}
+
+.dropdown-content button::before {
+  border-radius: 0px;
+  height: 100%;
+  width: 0%
+}
+
+.dropdown-content button:hover::before {
+  width: 100%
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
 @font-face {
   font-family: 'Helvetica Neue';
   src: local('Helvetica Neue'),
