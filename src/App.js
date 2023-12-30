@@ -8,6 +8,9 @@ import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, updateDoc } 
 
 import { sha256 } from 'js-sha256';
 
+import Dropdown from 'react-dropdown';
+import 'react-dropdown/style.css';
+
 const firebaseConfig = {
   apiKey: "AIzaSyDtM_T9fJt4miiDDYkkWJg3XynMwWBFBMg",
   authDomain: "study-8289d.firebaseapp.com",
@@ -82,34 +85,65 @@ function checkUsername(users, cookie) {
   }
 }
 
-function editGroup(username, data, update=false) {
-  console.log("editing group", data)
+function editGroup(username, data, update=false, del=false) {
   try {
-    setDoc(doc(db, "users", username, "groups", data.id), data)
+    let func = () => {}
+    if (update) {
+      func = updateDoc
+    } else if (del) {
+      func = deleteDoc
+    } else {
+      func = setDoc
+    }
+    func(doc(db, "users", username, "groups", data.id), data)
   } catch (error) {
     console.error("writing document failed:", error);
   }
 }
 
-function editSubject(username, groupname, data) {
+function editSubject(username, groupname, data, update=false, del=false) {
   try {
-    setDoc(doc(db, "users", username, "groups", groupname, "subjects", data.id), data);
+    let func = () => {}
+    if (update) {
+      func = updateDoc
+    } else if (del) {
+      func = deleteDoc
+    } else {
+      func = setDoc
+    }
+    func(doc(db, "users", username, "groups", groupname, "subjects", data.id), data);
   } catch (error) {
     console.error("writing document failed:", error);
   }
 }
 
-function editModule(username, groupname, subjectname, data) {
+function editModule(username, groupname, subjectname, data, update=false, del=false) {
   try {
-    setDoc(doc(db, "users", username, "groups", groupname, "subjects", subjectname, "modules", data.id), data);
+    let func = () => {}
+    if (update) {
+      func = updateDoc
+    } else if (del) {
+      func = deleteDoc
+    } else {
+      func = setDoc
+    }
+    func(doc(db, "users", username, "groups", groupname, "subjects", subjectname, "modules", data.id), data);
   } catch (error) {
     console.error("writing document failed:", error);
   }
 }
 
-function editSystem(username, data) {
+function editSystem(username, data, update=false, del=false) {
   try {
-    setDoc(doc(db, "users", username, "systems", data.id), data);
+    let func = () => {}
+    if (update) {
+      func = updateDoc
+    } else if (del) {
+      func = deleteDoc
+    } else {
+      func = setDoc
+    }
+    func(doc(db, "users", username, "systems", data.id), data);
   } catch (error) {
     console.error("writing document failed:", error);
   }
@@ -119,64 +153,87 @@ function getKey(object, value) {
   return Object.keys(object).find(key => object[key] === value);
 }
 
-function Dropdown(props) {
-  const [chosen, setChosen] = useState(props.list[0])
-  return (
-    <div className="dropdown">
-      <button className="dropbtn" id={props.id+"-chosen"}>{chosen}</button>
-      <div className="dropdown-content">
-        {
-          props.list.map(system => {
-            return <button onClick={() => setChosen(system)}>{system}</button>
-          })
-        }
-      </div>
-    </div>
-  )
+async function findError(newObject, list, setError) {
+  setError("")
+  if (!newObject.color.match(/^#(?:(?:[\da-f]{3}){1,2}|(?:[\da-f]{4}){1,2})$/i)) {
+    setError(`${newObject.color} is not a valid color.`)
+  } else {
+    for (let l in list) {
+      if (list[l].name === newObject.name && list[l].id != newObject.id) {
+        setError(`module with name "${newObject.name}" already exists.`)
+      } 
+    }
+  }
+  if (!newObject.name) {
+    setError("a name is required.")
+  }
 }
 
 function SubjectsBody(props) {
   const [color, setColor] = useState(Math.floor(Math.random()*16777215).toString(16))
-  const [error, setError] = useState("")
+  const [error, setError] = useState(null)
 
   const [color2, setColor2] = useState(Math.floor(Math.random()*16777215).toString(16))
-  const [error2, setError2] = useState("")
+  const [error2, setError2] = useState(null)
+
+  useEffect(() => {
+    setColor(Math.floor(Math.random()*16777215).toString(16))
+    setColor2(Math.floor(Math.random()*16777215).toString(16))
+    setError(null)
+  }, [props.chosenGroup, props.chosenSubject, props.chosenModule]) 
   
+  function newGroup(mode="add") {
+    return {
+      id: sha256(document.getElementById(`form-${mode}group-name-input`).value),
+      name: document.getElementById(`form-${mode}group-name-input`).value,
+      description: document.getElementById(`form-${mode}group-description-input`).value,
+      color: document.getElementById(`form-${mode}group-color-input`).value,
+      system: document.getElementById(`form-${mode}group-system-list-chosen`).innerHTML
+    }
+  }
+
+  function newSubject(mode="add") {
+    return {
+      id: sha256(document.getElementById(`form-${mode}subject-name-input`).value),
+      name: document.getElementById(`form-${mode}subject-name-input`).value,
+      weightage: Number(document.getElementById(`form-${mode}subject-weightage-input`).value),
+      color: document.getElementById(`form-${mode}subject-color-input`).value,
+    }
+  }
+
+  function newModule(mode="add") {
+    return {
+      id: props.chosenModule.id,
+      name: document.getElementById(`form-${mode}module-name-input`).value,
+      weightage: Number(document.getElementById(`form-${mode}module-weightage-input`).value),
+      color: document.getElementById(`form-${mode}module-color-input`).value,
+    }
+  }
+
   if (props.chosenGroup.name === "settings") {
     return (
       <div className="subjects-body">
-        <div className="add-group">
+        <div className="add-group" onInput={() => findError(newGroup(), props.groupList, setError)}>
           add group:
           <div>
-            name: <input type="text" id="form-addgroup-name-input" />
+            name: <input type="text" id="form-addgroup-name-input" defaultValue="name" />
           </div>
           <div>
-            description: <input type="text" id="form-addgroup-description-input" />
+            description: <input type="text" id="form-addgroup-description-input" defaultValue="description" />
           </div>
           <div style={{color: color}}>
-            color: <input type="text" id="form-addgroup-color-input" onChange={e => setColor(e.target.value)}/>
+            color: <input type="text" id="form-addgroup-color-input" style={{color: color}} onChange={e => setColor(e.target.value)} pattern="[#0-9a-f]" defaultValue={`#${color}`} />
           </div>
           <div>
-            system: <Dropdown id="form-addgroup-system-list" list={props.systems.map(prop => prop.name)}/>
+            system: <Dropdown id="form-addgroup-system-list" className="dropdown" placeholderClassName="dropbtn" menuClassName="dropdown-content" options={props.systems.map(prop => prop.name)} value={props.systems[0].name} placeholder="select a system." />
           </div>
           <span style={{color: "#f00"}}>{error}</span>
           <button id="form-addgroup-submit-button" onClick={
             () => {
-              let newGroup = {
-                id: sha256(document.getElementById("form-addgroup-name-input").value),
-                name: document.getElementById("form-addgroup-name-input").value,
-                description: document.getElementById("form-addgroup-description-input").value,
-                color: document.getElementById("form-addgroup-color-input").value,
-                system: document.getElementById("form-addgroup-system-list-chosen").value
-              }
-              setError("")
-              for (let group in props.groupList) {
-                if (props.groupList[group].name === newGroup.name) {
-                  setError(`group with name "${newGroup.name}" already exists.`)
-                } 
-              }
-              if (!error) {
-                editGroup(sha256(props.username), newGroup)
+              findError(newGroup(), props.groupList, setError)
+              if (!error && typeof error === "string") {
+                editGroup(sha256(props.username), newGroup())
+                fetchData([sha256(props.username), "groups"], props.setGroupList, props.setLoading, setError)
               }
             }
           }>add group</button>
@@ -186,137 +243,109 @@ function SubjectsBody(props) {
   } else if (props.chosenSubject.name === "settings") {
     return (
       <div className="subjects-body">
-        <div className="edit-group">
+        <div className="edit-group" onInput={() => findError(newGroup("edit"), props.groupList, setError)}>
           edit group:
           <div>
-            name: <input type="text" id="form-editgroup-name-input" />
+            name: <input type="text" id="form-editgroup-name-input" defaultValue={props.chosenGroup.name} />
           </div>
           <div>
-            description: <input type="text" id="form-editgroup-description-input" />
+            description: <input type="text" id="form-editgroup-description-input" defaultValue={props.chosenGroup.description} />
           </div>
           <div style={{color: color}}>
-            color: <input type="text" id="form-editgroup-color-input" onChange={e => setColor(e.target.value)}/>
+            color: <input type="text" id="form-editgroup-color-input" style={{color: color}} defaultValue={props.chosenGroup.color} onChange={e => setColor(e.target.value)} pattern="[#0-9a-f]" />
           </div>
           <div>
-            system: <Dropdown id="form-editgroup-system-list" list={props.systems.map(prop => prop.name)}/>
+            system: <Dropdown id="form-editgroup-system-list" options={props.systems.map(prop => prop.name)} value={props.chosenGroup.system} placeholder="select a system." />
           </div>
           <span style={{color: "#f00"}}>{error}</span>
           <button id="form-editgroup-submit-button" onClick={
             () => {
-              let newGroup = {
-                id: props.chosenGroup.id,
-                name: document.getElementById("form-editgroup-name-input").value,
-                description: document.getElementById("form-editgroup-description-input").value,
-                color: document.getElementById("form-editgroup-color-input").value,
-                system: document.getElementById("form-editgroup-system-list-chosen").value
-              }
-              setError("")
-              for (let group in props.groupList) {
-                if (props.groupList[group].name === newGroup.name && props.groupList[group].id != newGroup.id) {
-                  setError(`group with name "${newGroup.name}" already exists.`)
-                } 
-              }
-              if (!error) {
-                editGroup(sha256(props.username), newGroup, true)
-                console.log(props.groupList)
-              }
+              findError(newGroup("edit"), props.groupList, setError)
+              if (!error && typeof error === "string") {
+                editGroup(sha256(props.username), newGroup("edit"), true)
+                fetchData([sha256(props.username), "groups"], props.setGroupList, props.setLoading, setError)
+              } 
             }
           }>edit group</button>
+          <button id="form-editgroup-delete-button" onClick={
+            () => {
+              editGroup(sha256(props.username), {id: props.chosenGroup.id}, false, true)
+              fetchData([sha256(props.username), "groups"], props.setGroupList, props.setLoading, setError)
+              props.setChosenGroup(props.groupList[0])
+            }
+          }>delete group</button>
         </div>
-        <div className="add-subject">
+        <div className="add-subject" onInput={() => findError(newSubject(), props.subjectList, setError2)}>
           add subject:
           <div>
-            name: <input type="text" id="form-addsubject-name-input" />
+            name: <input type="text" id="form-addsubject-name-input" defaultValue="name" />
           </div>
           <div>
-            weightage: <input type="text" id="form-addsubject-weightage-input" />
+            weightage: <input type="number" id="form-addsubject-weightage-input" min="0" pattern="[0-9.]" defaultValue="0" />
           </div>
           <div style={{color: color2}}>
-            color: <input type="text" id="form-addsubject-color-input" onChange={e => setColor2(e.target.value)}/>
+            color: <input type="text" id="form-addsubject-color-input" style={{color: color2}} onChange={e => setColor2(e.target.value)} pattern="[#0-9a-f]" defaultValue={`#${color}`} />
           </div>
           <button id="form-addsubject-submit-button" onClick={
             () => {
-              let newSubject = {
-                id: sha256(document.getElementById("form-addsubject-name-input").value),
-                name: document.getElementById("form-addsubject-name-input").value,
-                weightage: Number(document.getElementById("form-addsubject-weightage-input").value),
-                color: document.getElementById("form-addsubject-color-input").value,
-              }
-              setError("")
-              for (let subject in props.subjectList) {
-                if (props.subjectList[subject].name === newSubject.name) {
-                  setError(`group with name "${newSubject.name}" already exists.`)
-                } 
-              }
+              findError(newSubject(), props.subjectList, setError)
               if (!error) {
-                editSubject(sha256(props.username), sha256(props.chosenGroup.name), newSubject)
+                editSubject(sha256(props.username), sha256(props.chosenGroup.name), newSubject())
+                fetchData([sha256(props.username), "groups", sha256(props.chosenGroup.name), "subjects"], props.setSubjectList, props.setLoading, setError)
               }
             }
-          }>add subject</button>
+          }>add subject</button> 
         </div>
       </div>
     )
   } else if (props.chosenModule.name === "settings") {
     return (
       <div className="subjects-body">
-        <div className="edit-subject">
+        <div className="edit-subject" onInput={() => findError(newSubject("edit"), props.subjectList, setError)}>
           edit subject:
           <div>
-            name: <input type="text" id="form-editsubject-name-input" />
+            name: <input type="text" id="form-editsubject-name-input" defaultValue={props.chosenSubject.name} />
           </div>
           <div>
-            weightage: <input type="text" id="form-editsubject-weightage-input" />
+            weightage: <input type="number" id="form-editsubject-weightage-input" min="0" defaultValue={props.chosenSubject.weightage} pattern="[0-9.]" />
           </div>
           <div style={{color: color}}>
-            color: <input type="text" id="form-editsubject-color-input" onChange={e => setColor(e.target.value)}/>
+            color: <input type="text" id="form-editsubject-color-input" onChange={e => setColor(e.target.value)} defaultValue={props.chosenSubject.color} pattern="[#0-9a-f]" />
           </div>
           <button id="form-editsubject-submit-button" onClick={
             () => {
-              let newSubject = {
-                id: props.chosenSubject.id,
-                name: document.getElementById("form-editsubject-name-input").value,
-                weightage: Number(document.getElementById("form-editsubject-weightage-input").value),
-                color: document.getElementById("form-editsubject-color-input").value,
-              }
-              setError("")
-              for (let subject in props.subjectList) {
-                if (props.subjectList[subject].name === newSubject.name && props.subjectList[subject].id != newSubject.id) {
-                  setError(`group with name "${newSubject.name}" already exists.`)
-                } 
-              }
+              findError(newSubject("edit"), props.subjectList, setError)
               if (!error) {
-                editSubject(sha256(props.username), sha256(props.chosenGroup.name), newSubject)
+                editSubject(sha256(props.username), sha256(props.chosenGroup.name), newSubject("edit"), true)
+                fetchData([sha256(props.username), "groups", sha256(props.chosenGroup.name), "subjects"], props.setSubjectList, props.setLoading, setError)
               }
             }
           }>edit subject</button>
+          <button id="form-editsubject-delete-button" onClick={
+            () => {
+              editSubject(sha256(props.username), sha256(props.chosenGroup.name), {id: props.chosenSubject.id}, false, true)
+              fetchData([sha256(props.username), "groups", sha256(props.chosenGroup.name), "subjects"], props.setSubjectList, props.setLoading, setError)
+              props.setChosenSubject(props.subjectList[0])
+            }
+          }>delete subject</button>
         </div>
-        <div className="add-module">
+        <div className="add-module" onInput={() => findError(newModule(), props.moduleList, setError2)}>
           add module:
           <div>
-            name: <input type="text" id="form-addmodule-name-input" />
+            name: <input type="text" id="form-addmodule-name-input" defaultValue="name" />
           </div>
           <div>
-            weightage: <input type="text" id="form-addmodule-weightage-input" />
+            weightage: <input type="number" id="form-addmodule-weightage-input" min="0" pattern="[0-9.]" defaultValue="0" />
           </div>
           <div style={{color: color2}}>
-            color: <input type="text" id="form-addmodule-color-input" onChange={e => setColor2(e.target.value)}/>
+            color: <input type="text" id="form-addmodule-color-input" onChange={e => setColor2(e.target.value)} pattern="[#0-9a-f]" defaultValue={`#${color}`} />
           </div>
           <button id="form-addmodule-submit-button" onClick={
             () => {
-              let newModule = {
-                id: sha256(document.getElementById("form-addmodule-name-input").value),
-                name: document.getElementById("form-addmodule-name-input").value,
-                weightage: Number(document.getElementById("form-addmodule-weightage-input").value),
-                color: document.getElementById("form-addmodule-color-input").value,
-              }
-              setError("")
-              for (let modul in props.moduleList) {
-                if (props.moduleList[modul].name === newModule.name) {
-                  setError(`group with name "${newModule.name}" already exists.`)
-                } 
-              }
+              findError(newModule(), props.moduleList, setError)
               if (!error) {
-                editModule(sha256(props.username), sha256(props.chosenGroup.name), sha256(props.chosenSubject.name), newModule)
+                editModule(sha256(props.username), sha256(props.chosenGroup.name), sha256(props.chosenSubject.name), newModule())
+                fetchData([sha256(props.username), "groups", sha256(props.chosenGroup.name), "subjects", sha256(props.chosenSubject.name), "modules"], props.setModuleList, props.setLoading, setError)
               }
             }
           }>add module</button>
@@ -326,36 +355,33 @@ function SubjectsBody(props) {
   } else if (props.chosenGroup.name && props.chosenSubject.name && props.chosenModule.name) {
     return (
       <div className="subjects-body">
-        <div className="edit-module">
+        <div className="edit-module" onInput={() => findError(newModule("edit"), props.moduleList, setError)}>
           edit module:
           <div>
-            name: <input type="text" id="form-editmodule-name-input" />
+            name: <input type="text" id="form-editmodule-name-input" defaultValue={props.chosenModule.name} />
           </div>
           <div>
-            weightage: <input type="text" id="form-editmodule-weightage-input" />
+            weightage: <input type="number" id="form-editmodule-weightage-input" min="0" defaultValue={props.chosenModule.weightage} pattern="[0-9.]" />
           </div>
           <div style={{color: color}}>
-            color: <input type="text" id="form-editmodule-color-input" onChange={e => setColor(e.target.value)}/> 
+            color: <input type="text" id="form-editmodule-color-input" onChange={e => setColor(e.target.value)} defaultValue={props.chosenModule.color} pattern="[#0-9a-f]" /> 
           </div>
           <button id="form-editmodule-submit-button" onClick={
             () => {
-              let newModule = {
-                id: props.chosenModule.id,
-                name: document.getElementById("form-editmodule-name-input").value,
-                weightage: Number(document.getElementById("form-editmodule-weightage-input").value),
-                color: document.getElementById("form-editmodule-color-input").value,
-              }
-              setError("")
-              for (let modul in props.moduleList) {
-                if (props.moduleList[modul].name === newModule.name && props.moduleList[modul].id != newModule.id) {
-                  setError(`group with name "${newModule.name}" already exists.`)
-                } 
-              }
+              findError(newModule("edit"), props.moduleList, setError)
               if (!error) {
-                editGroup(sha256(props.username), sha256(props.chosenGroup.name), sha256(props.chosenSubject.name), newModule)
+                editModule(sha256(props.username), sha256(props.chosenGroup.name), sha256(props.chosenSubject.name), newModule("edit"), true)
+                fetchData([sha256(props.username), "groups", sha256(props.chosenGroup.name), "subjects", sha256(props.chosenSubject.name), "modules"], props.setModuleList, props.setLoading, setError)
               }
             }
           }>edit module</button>
+          <button id="form-editmodule-delete-button" onClick={
+            () => {
+              editModule(sha256(props.username), sha256(props.chosenGroup.name), sha256(props.chosenSubject.name), {id: props.chosenModule.id}, false, true)
+              fetchData([sha256(props.username), "groups", sha256(props.chosenGroup.name), "subjects"], sha256(props.chosenSubject.name), "modules", props.setModuleList, props.setLoading, setError)
+              props.setChosenModule(props.moduleList[0])
+            }
+          }>delete module</button>
         </div>
       </div>
     )
@@ -400,10 +426,10 @@ function Body(props) {
       let username = JSON.parse(Cookies.get("loggedIn")).username
       if (checkLoggedIn(users, Cookies.get("loggedIn")) && props.tab === 1) {
         if (Object.keys(chosenGroup).length) {
-          fetchData([sha256(username), "groups", sha256(chosenGroup.name), "subjects"], setSubjectList, props.setLoadingGroups, setError, props.loadingGroups)
+          fetchData([sha256(username), "groups", sha256(chosenGroup.name), "subjects"], setSubjectList, props.setLoading, setError)
         }
         if (Object.keys(chosenSubject).length) {
-          fetchData([sha256(username), "groups", sha256(chosenGroup.name), "subjects", sha256(chosenSubject.name), "modules"], setModuleList, props.setLoadingGroups, setError, props.loadingGroups)
+          fetchData([sha256(username), "groups", sha256(chosenGroup.name), "subjects", sha256(chosenSubject.name), "modules"], setModuleList, props.setLoading, setError)
         }
       }
     } catch {}
@@ -700,32 +726,32 @@ function Body(props) {
             <div className="side-panel groups">
               {
                 groupList.map((group) => {
-                  return <button className={`side-panel-item ${chosenGroup === group ? "selected" : ""}`} style={{color: group.color}} onClick={() => {setChosenGroup(group); setChosenSubject({}); setChosenModule({})}}>{group.name}</button>
+                  return <button className={`side-panel-item ${chosenGroup.id === group.id ? "selected" : ""}`} style={{color: group.color}} onClick={() => {setChosenGroup(group); setChosenSubject({name: "settings"}); setChosenModule({})}}>{group.name}</button>
                 })
               }
-              <button className={`side-panel-item ${chosenGroup === "settings" ? "selected" : ""}`} onClick={() => {setChosenGroup({name: "settings"}); setChosenSubject({}); setChosenModule({})}}>overall settings</button>
+              <button className={`side-panel-item ${chosenGroup.name === "settings" ? "selected" : ""}`} onClick={() => {setChosenGroup({name: "settings"}); setChosenSubject({}); setChosenModule({})}}>overall settings</button>
             </div>
             {
               chosenGroup.name === "settings" ? <div></div> : !Object.keys(chosenGroup).length ? "pick a group first!" : !subjectList ? "add a subject!" :<div className="side-panel subjects">
                 { 
-                  subjectList.map((subject) => { 
-                    return <button className={`side-panel-item ${chosenSubject === subject ? "selected" : ""}`} style={{color: subject.color}} onClick={() => {setChosenSubject(subject); setChosenModule({})}}>{subject.name}</button>
+                  subjectList.map((subject) => {
+                    return <button className={`side-panel-item ${chosenSubject.id === subject.id ? "selected" : ""}`} style={{color: subject.color}} onClick={() => {setChosenSubject(subject); setChosenModule({name: "settings"})}}>{subject.name}</button>
                   })
                 }
-                <button className={`side-panel-item ${chosenSubject === "settings" ? "selected" : ""}`} onClick={() => {setChosenSubject({name: "settings"}); setChosenModule({})}}>group settings</button>
+                <button className={`side-panel-item ${chosenSubject.name === "settings" ? "selected" : ""}`} onClick={() => {setChosenSubject({name: "settings"}); setChosenModule({})}}>group settings</button>
               </div>
             }
             {
               chosenGroup.name === "settings" || chosenSubject.name === "settings" ? <div></div> : !Object.keys(chosenSubject).length ? (Object.keys(chosenGroup).length ? "pick a subject first!" : "") : !moduleList ? "add a module!" : <div className="side-panel modules">
                 {
                   moduleList.map((module) => { 
-                    return <button className={`side-panel-item ${chosenModule === module ? "selected" : ""}`} style={{color: module.color}} onClick={() => {setChosenModule(module)}}>{module.name}</button>
+                    return <button className={`side-panel-item ${chosenModule.id === module.id ? "selected" : ""}`} style={{color: module.color}} onClick={() => {setChosenModule(module)}}>{module.name}</button>
                   })
                 }
-                <button className={`side-panel-item ${chosenModule === "settings" ? "selected" : ""}`} onClick={() => {setChosenModule({name: "settings"})}}>subject settings</button>
+                <button className={`side-panel-item ${chosenModule.name === "settings" ? "selected" : ""}`} onClick={() => {setChosenModule({name: "settings"})}}>subject settings</button>
               </div>
             }
-            <SubjectsBody username={checkUsername(users, Cookies.get("loggedIn"))} groupList={groupList} setGroupList={setGroupList} subjectList={subjectList} setSubjectList={setSubjectList} moduleList={moduleList} setModuleList={setModuleList} chosenGroup={chosenGroup} chosenSubject={chosenSubject} chosenModule={chosenModule} systems={systems}/>
+            <SubjectsBody username={checkUsername(users, Cookies.get("loggedIn"))} groupList={groupList} setGroupList={setGroupList} subjectList={subjectList} setSubjectList={setSubjectList} moduleList={moduleList} setModuleList={setModuleList} chosenGroup={chosenGroup} setChosenGroup={setChosenGroup} chosenSubject={chosenSubject} setChosenSubject={setChosenSubject} chosenModule={chosenModule} setChosenModule={setChosenModule} systems={systems} setLoading={props.setLoading} />
           </div>
         )
       case 2:
@@ -785,12 +811,22 @@ function Body(props) {
   }
 }
 
+function AddLog() {
+  return (
+    <div className="add-module">
+      add log:
+      <Dropdown/>
+      <Dropdown/>
+      <Dropdown/>
+    </div>
+  )
+}
+
 function App() {
   const [tab, setTab] = useState(0)
 
   const [users, setUsers] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [loadingGroups, setLoadingGroups] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -815,7 +851,8 @@ function App() {
       <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-app-compat.js"></script>
       <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore-compat.js"></script>
       {navbar}
-      <Body tab={tab} users={users} loading={loading} setLoading={setLoading} loadingGroups={loadingGroups} setLoadingGroups={setLoadingGroups} error={error} />
+      <Body tab={tab} users={users} loading={loading} setLoading={setLoading} error={error} />
+      <AddLog />
     </div>
   );
 }
