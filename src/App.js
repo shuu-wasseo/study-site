@@ -1442,7 +1442,11 @@ function AddLog(props) {
         className="form-addlog-group-list"
         classNames={
           {
-            singleValue: state => "form-addlog-group-list-chosen"
+            singleValue: state => "form-addlog-group-list-chosen",
+            control: state => "dropbtn",
+            container: state => "dropdown",
+            menuList: state => "dropdown-content",
+
           }
         }
         options={
@@ -1657,4 +1661,3 @@ function App() {
 }
 
 export default App
-
