@@ -59,7 +59,9 @@ async function fetchData(params, func, setLoading, setError, loading, purpose) {
   }
 }
 
-async function subjectTotal(username, group, subject, addedModule = { id: "" }, quantity) {
+async function subjectTotal(
+  username, group, subject, addedModule = { id: "" }, quantity
+) {
   if (group.id && subject.id) {
     const collection = await fetchData([
       sha256(username), "groups",
@@ -85,7 +87,9 @@ async function subjectTotal(username, group, subject, addedModule = { id: "" }, 
   }
 }
 
-async function groupTotal(username, group, addedSubject={ id:"" }, addedModule = { id: "" }, quantity) {
+async function groupTotal(
+  username, group, addedSubject={ id:"" }, addedModule = { id: "" }, quantity
+) {
   if (group.id) {
     const collection = await fetchData([
       sha256(username), "groups",
@@ -98,9 +102,13 @@ async function groupTotal(username, group, addedSubject={ id:"" }, addedModule =
     for (let item of collection) {
       totalWeightage += item.weightage;
       if (item.id === addedSubject.id) {
-        totalScore += await subjectTotal(username, group, item, addedModule={id: addedModule.id}, quantity) * item.weightage;
+        totalScore += await subjectTotal(
+          username, group, item, addedModule={id: addedModule.id}, quantity
+        ) * item.weightage;
       } else {
-        totalScore += await subjectTotal(username, group, item) * item.weightage;
+        totalScore += await subjectTotal(
+          username, group, item
+        ) * item.weightage;
       }
       console.log("check", totalScore, totalWeightage)
     }
@@ -256,7 +264,9 @@ function getKey(object, value) {
 
 async function findError(newObject, list, setError) {
   setError("")
-  if (!newObject.color.match(/^#(?:(?:[\da-f]{3}){1,2}|(?:[\da-f]{4}){1,2})$/i)) {
+  if (
+    !newObject.color.match(/^#(?:(?:[\da-f]{3}){1,2}|(?:[\da-f]{4}){1,2})$/i
+  )) {
     setError(`${newObject.color} is not a valid color.`)
   } else {
     for (let l in list) {
@@ -373,7 +383,9 @@ function SubjectsBody(props) {
                   singleValue: state => "form-addgroup-system-list-chosen"
                 }
               }
-              options={props.systems.map(i => {return {value: i.name, label: i.name}})} 
+              options={
+                props.systems.map(i => {return {value: i.name, label: i.name}})
+              } 
               defaultValue={
                 {value: props.systems[0].name, label: props.systems[0].name}
               }
@@ -436,7 +448,9 @@ function SubjectsBody(props) {
                   singleValue: state => "form-editgroup-system-list-chosen"
                 }
               }
-              options={props.systems.map(i => {return {value: i.name, label: i.name}})} 
+              options={
+                props.systems.map(i => {return {value: i.name, label: i.name}})
+              } 
               defaultValue={props.chosenGroup.system} 
               placeholder="select a system." 
             />
