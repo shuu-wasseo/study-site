@@ -26,7 +26,17 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig)
 const db = getFirestore(app)
 
-async function fetchData(params, func, setLoading, setError, loading) {
+function todaysDate() {
+  const date = new Date()
+
+  let day = date.getDate()
+  let month = date.getMonth() + 1
+  let year = date.getFullYear()
+  let currentDate = `${year}-${month}-${day}`
+  return currentDate
+}
+
+async function fetchData(params, func, setLoading, setError, loading, purpose) {
   try {
     const ncollection = await getDocs(
       collection(db, "users/" + params.join("/"))
@@ -35,12 +45,69 @@ async function fetchData(params, func, setLoading, setError, loading) {
     ncollection.forEach((docu) => {
       modifiedCollection.push(docu.data())
     })
-    func(modifiedCollection)
-    setLoading(false)
+    try {
+      func(modifiedCollection)
+      setLoading(false)
+    } catch {}
+    return modifiedCollection
   } catch (error) {
-    setError(error)
     console.error(error)
-    setLoading(false)
+    try {
+      setError(error)
+      setLoading(false)
+    } catch {}
+  }
+}
+
+async function subjectTotal(username, group, subject, addedModule = { id: "" }, quantity) {
+  if (group.id && subject.id) {
+    const collection = await fetchData([
+      sha256(username), "groups",
+      sha256(group.name), "subjects",
+      sha256(subject.name), "modules"
+    ]);
+
+    let totalScore = 0;
+    let totalWeightage = 0;
+
+    for (let item of collection) {
+      totalWeightage += item.weightage;
+      if (item.id === addedModule.id) {
+        totalScore += quantity * item.weightage;
+      } else {
+        totalScore += item.tier * item.weightage;
+      }
+    }
+
+    return totalWeightage !== 0 ? (totalScore / totalWeightage) * 100 : 0;
+  } else {
+    return "?";
+  }
+}
+
+async function groupTotal(username, group, addedSubject={ id:"" }, addedModule = { id: "" }, quantity) {
+  if (group.id) {
+    const collection = await fetchData([
+      sha256(username), "groups",
+      sha256(group.name), "subjects",
+    ]);
+
+    let totalScore = 0;
+    let totalWeightage = 0;
+
+    for (let item of collection) {
+      totalWeightage += item.weightage;
+      if (item.id === addedSubject.id) {
+        totalScore += await subjectTotal(username, group, item, addedModule={id: addedModule.id}, quantity) * item.weightage;
+      } else {
+        totalScore += await subjectTotal(username, group, item) * item.weightage;
+      }
+      console.log("check", totalScore, totalWeightage)
+    }
+
+    return totalWeightage !== 0 ? (totalScore / totalWeightage) : 0;
+  } else {
+    return "?";
   }
 }
 
@@ -88,6 +155,26 @@ function checkUsername(users, cookie) {
   }
 }
 
+function getCurrentUser(users, cookie) {
+  if (!cookie) {
+    return "No username found"
+  }
+  try {
+    JSON.parse(cookie)
+  } catch {
+    return false
+  }
+  let foundUser = {}
+  if (users) {
+    users.forEach(user => {
+      if (JSON.parse(cookie).password === user.account.password) {
+        foundUser = user
+      }
+    })
+  } 
+  return foundUser
+}
+
 function editGroup(username, data, update=false, del=false) {
   try {
     let func = () => {}
@@ -114,6 +201,7 @@ function editSubject(username, groupname, data, update=false, del=false) {
     } else {
       func = setDoc
     }
+    console.log(db, "users", username, "groups", groupname, "subjects", data.id)
     func(
       doc(db, "users", username, "groups", groupname, "subjects", data.id), 
       data
@@ -201,7 +289,9 @@ function SubjectsBody(props) {
   
   function newGroup(mode="add") {
     return {
-      id: sha256(document.getElementById(`form-${mode}group-name-input`).value),
+      id: mode === "add" ? sha256(
+        document.getElementById(`form-${mode}group-name-input`).value
+      ) : props.chosenGroup.id,
       name: document.getElementById(`form-${mode}group-name-input`).value,
       description: document.getElementById(
         `form-${mode}group-description-input`
@@ -215,9 +305,9 @@ function SubjectsBody(props) {
 
   function newSubject(mode="add") {
     return {
-      id: sha256(document.getElementById(
-        `form-${mode}subject-name-input`
-      ).value),
+      id: mode === "add" ? sha256(
+        document.getElementById(`form-${mode}subject-name-input`).value
+      ) : props.chosenSubject.id,
       name: document.getElementById(`form-${mode}subject-name-input`).value,
       weightage: Number(document.getElementById(
         `form-${mode}subject-weightage-input`
@@ -226,14 +316,21 @@ function SubjectsBody(props) {
     }
   }
 
-  function newModule(mode="add") {
+  function newModule(mode="add", data) {
     return {
-      id: props.chosenModule.id,
+      id: mode === "add" ? sha256(
+        document.getElementById(`form-${mode}module-name-input`).value
+      ) : props.chosenModule.id,
       name: document.getElementById(`form-${mode}module-name-input`).value,
       weightage: Number(document.getElementById(
         `form-${mode}module-weightage-input`
       ).value),
       color: document.getElementById(`form-${mode}module-color-input`).value,
+      tier: 0,
+      weightage: 1,
+      records: {
+        [todaysDate()]: 0
+      }
     }
   }
 
@@ -277,6 +374,9 @@ function SubjectsBody(props) {
                 }
               }
               options={props.systems.map(i => {return {value: i.name, label: i.name}})} 
+              defaultValue={
+                {value: props.systems[0].name, label: props.systems[0].name}
+              }
               placeholder="select a system." 
             />
           </div>
@@ -677,7 +777,7 @@ function Body(props) {
           setSystems, props.setLoading, setError
         )
       }
-    } catch {}
+    } catch (e) {console.error(e)}
 
   }, [props.tab, loggedIn, error])
 
@@ -705,7 +805,7 @@ function Body(props) {
           )
         }
       }
-    } catch {}
+    } catch (e) {console.error(e)}
   }, [props.tab, loggedIn, chosenGroup, chosenSubject])
 
   function logIn() {
@@ -786,8 +886,20 @@ function Body(props) {
             id: sha256(givenUsername),
             username: givenUsername,
             password: sha256(givenUsername + givenPassword),
-            profile_image: "https://i.pinimg.com/custom_covers/222x/85498161615209203_1636332751.jpg"
+            profile_image: "https://i.pinimg.com/custom_covers/222x/85498161615209203_1636332751.jpg", 
           },
+          tiers: [
+            {
+              name: "no",
+              value: 0,
+              color: "#f00"
+            },
+            {
+              name: "yes",
+              value: 1,
+              color: "#0f0"
+            }
+          ]
         })
         editGroup(sha256(givenUsername), {
           id: sha256("sample group"),
@@ -809,11 +921,11 @@ function Body(props) {
           {
             id: sha256("sample module"),
             name: "sample module",
-            score: 0,
+            tier: 0,
             weightage: 1,
             color: "#ffffff",
             records: {
-              "1702651632011": 0
+              [todaysDate()]: 0
             }
           }
         )
@@ -950,21 +1062,7 @@ function Body(props) {
               color: "#1a1e2d"
             }
           }
-        })
-        editSystem(sha256(givenUsername), {
-          id: sha256("yes and no"),
-          name: "yes and no", 
-          bands: {
-            "yes": {
-              condition: "(i) => {return i == 100}", 
-              color: "#00ff33"
-            },
-            "no": {
-              condition: "(i) => {return i == 0}", 
-              color: "#ff0000"
-            }
-          }
-        })
+        }) 
       } catch (error) {
         console.error("writing document failed:", error)
         exception = error
@@ -1228,13 +1326,21 @@ function AddLog(props) {
   const [error, setError] = useState("")
   const [loggedIn, setLoggedIn] = useState(checkLoggedIn(props.users, Cookies.get("loggedIn")))
 
-  const [chosenGroup, setChosenGroup] = useState("")  
-  const [chosenSubject, setChosenSubject] = useState("")  
-  const [chosenModule, setChosenModule] = useState("")
+  const [tiers, setTiers] = useState([])
+
+  const [username, setUsername] = useState("")
+
+  const [chosenGroup, setChosenGroup] = useState({})  
+  const [chosenSubject, setChosenSubject] = useState({})  
+  const [chosenModule, setChosenModule] = useState({})
+  const [chosenTier, setChosenTier] = useState({})
 
   const [groupList, setGroupList] = useState([])
   const [subjectList, setSubjectList] = useState([])
   const [moduleList, setModuleList] = useState([])
+
+  const [subjectTotals, setSubjectTotals] = useState([0, 0])
+  const [groupTotals, setGroupTotals] = useState([0, 0])
 
   useEffect(() => {
     setLoggedIn(checkLoggedIn(props.users, Cookies.get("loggedIn")))
@@ -1248,37 +1354,73 @@ function AddLog(props) {
           setGroupList, props.setLoading, setError
         )
       }
-    } catch {}
-
+    } catch (e) {console.error(e)}
+    const currentUser = getCurrentUser(props.users, Cookies.get("loggedIn"))
+    if (Object.keys(currentUser).length) {
+      setTiers(currentUser.tiers)
+      setUsername(currentUser.account.username)
+    }
   }, [props.tab, loggedIn, error])
 
   useEffect(() => {
     try {
       let username = JSON.parse(Cookies.get("loggedIn")).username
       if (checkLoggedIn(props.users, Cookies.get("loggedIn"))) {
-        if (chosenGroup) {
+        if (chosenGroup.name) {
           fetchData(
             [
               sha256(username), "groups", 
-              sha256(chosenGroup.value), "subjects"
+              sha256(chosenGroup.name), "subjects"
             ], 
             setSubjectList, props.setLoading, setError
           )
         }
-        if (chosenSubject) {
+        if (chosenSubject.name) {
           fetchData(
             [
               sha256(username), "groups", 
-              sha256(chosenGroup.value), "subjects", 
-              sha256(chosenSubject.value), "modules"
+              sha256(chosenGroup.name), "subjects", 
+              sha256(chosenSubject.name), "modules"
             ], 
             setModuleList, props.setLoading, setError
           )
         }
       }
-    } catch {}
+    } catch (e) {console.error(e)}
   }, [props.tab, loggedIn, chosenGroup, chosenSubject])
 
+  useEffect(() => {
+    const fetchDataAsync = async () => {
+      const total1 = await subjectTotal(
+        username, 
+        chosenGroup, 
+        chosenSubject
+      )
+      const total2 = await subjectTotal(
+        username, 
+        chosenGroup, 
+        chosenSubject, 
+        chosenModule, 
+        typeof chosenTier.value === "number" ? chosenTier.value : 0
+      )
+      setSubjectTotals([total1, total2])
+
+      const total3 = await groupTotal(
+        username, 
+        chosenGroup 
+      )
+      const total4 = await groupTotal(
+        username, 
+        chosenGroup, 
+        chosenSubject,
+        chosenModule, 
+        typeof chosenTier.value === "number" ? chosenTier.value : 0
+      )
+      setGroupTotals([total3, total4])
+    }
+    fetchDataAsync()
+  }, [username, chosenGroup, chosenSubject, chosenModule, chosenTier.value])
+ 
   return (
     <div className="add-log">
       add log:
@@ -1290,11 +1432,11 @@ function AddLog(props) {
           }
         }
         options={
-          groupList.map(i => {return {...i, value: i.name, label: i.name}})
+          groupList.map(i => {return {value: i, label: i.name}})
         }
         placeholder="select a group." 
         onChange={e => {
-          setChosenGroup(e)
+          setChosenGroup(e.value)
         }}
       />
       { 
@@ -1307,11 +1449,11 @@ function AddLog(props) {
               }
             }
             options={
-              subjectList.map(i => {return {...i, value: i.name, label: i.name}})
+              subjectList.map(i => {return {value: i, label: i.name}})
             } 
             placeholder="select a subject." 
             onChange={e => {
-              setChosenSubject(e)
+              setChosenSubject(e.value)
             }}
           />
           : <Select
@@ -1335,11 +1477,11 @@ function AddLog(props) {
               }
             }
             options={
-              moduleList.map(i => {return {...i, value: i.name, label: i.name}})
+              moduleList.map(i => {return {value: i, label: i.name}})
             } 
             placeholder="select a module." 
             onChange={e => {
-              setChosenModule(e)
+              setChosenModule(e.value)
             }}
           />
           : <Select
@@ -1356,30 +1498,80 @@ function AddLog(props) {
       {
         chosenModule ? <div>
           <div>
-            progress (out of 100): <input 
-              type="number" 
-              id="form-addlog-progress-input"
-              pattern="[0-9.]" 
-              defaultValue="0" 
-              step="0.1"
+            progress: <Select 
+            className="form-addlog-progress-list"
+            classNames={
+              {
+                singleValue: state => "form-addlog-progress-list-chosen"
+              }
+            }
+            options={tiers.map(tier => {return {value: tier, label: tier.name}})}
+            onChange={
+              (e) => {
+                setChosenTier(e.value)
+              }
+            }
+            placeholder="select a tier."
             />
           </div>
           <div>
             description: <input 
               type="text" 
-              id="form-addlog-description-input"
-              defaultValue="0" 
+              id="form-addlog-progress-input"
             />
           </div>
           <button onClick={
             () => {
-              // add to score
-              // add to record
+              editModule(
+                sha256(username), 
+                sha256(chosenGroup.name), 
+                sha256(chosenSubject.name), 
+                {
+                  id: chosenModule.id,
+                  tier: chosenTier.value,
+                  [`records.${todaysDate()}`]: chosenTier.value
+                }, 
+                true
+              )
+              fetchData(
+                [
+                  sha256(username), "groups", 
+                  sha256(chosenGroup.name), "subjects", 
+                  sha256(chosenSubject.name), "modules"
+                ], 
+                props.setModuleList, props.setLoading, setError
+              )
               // add to log 
             }
           }>add log</button>
           <div>
-            module score: {} -> {}
+            <p>module score: {
+              typeof chosenModule.tier === "number" 
+                ? Math.round(chosenModule.tier / (tiers.length - 1) * 10000) / 100
+                : "?"
+            } → {
+              typeof chosenTier.value === "number" 
+                ? Math.round(chosenTier.value / (tiers.length - 1) * 10000) / 100
+                : "?"
+            }</p>
+            <p>subject score: {
+              typeof subjectTotals[0] === "number"
+                ? Math.round(subjectTotals[0] * 100) / 100
+                : "?"
+            } → {
+              typeof subjectTotals[1] === "number"
+                ? Math.round(subjectTotals[1] * 100) / 100
+                : "?"
+            }</p>
+            <p>group score: {
+              typeof groupTotals[0] === "number"
+                ? Math.round(groupTotals[0] * 100) / 100
+                : "?"
+            } → {
+              typeof groupTotals[1] === "number"
+                ? Math.round(groupTotals[1] * 100) / 100
+                : "?"
+            }</p>
           </div>
         </div> : null
       }
