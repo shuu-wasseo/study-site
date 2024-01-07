@@ -119,14 +119,21 @@ button, .button {
   z-index: 2;
 }
 
-.dropdown-content {
+.dropdown-menu {
+  height: 100%;
+  transform: translateY(-15px);
   background-color: #2c2d41;
-  display: none;
   position: absolute;
   min-width: 160px;
 }
 
-.dropdown-content button {
+.dropdown-content {
+  background-color: #2c2d41;
+  position: absolute;
+  min-width: 160px;
+}
+
+.dropdown-option {
   width: 100%;
   padding: 8px 8px;
   margin: 0px;
@@ -134,14 +141,14 @@ button, .button {
   border-radius: 0px;
 }
 
-.dropdown-content button::before {
+.dropdown-option::before {
   left: 50%;
   border-radius: 0px;
   height: 100%;
   width: 0%
 }
 
-.dropdown-content button:hover::before {
+.dropdown-option:hover::before {
   left: 0;
   width: 100%
 }
