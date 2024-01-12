@@ -98,9 +98,10 @@ button, .button {
 }
 
 .dropbtn {
+  background-color: #2c2d41;
   cursor: pointer;
-  width: 155px;
-  padding: 1vmin 1vmin;
+  width: 200px;
+  padding: 0vmin 1vmin;
   margin: 0px;
 }
 

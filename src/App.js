@@ -26,9 +26,28 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig)
 const db = getFirestore(app)
 
+const selectclasses = {
+  singleValue: state => "form-addlog-group-list-chosen",
+  control: state => "dropbtn",
+  container: state => "dropdown",
+  menu: state => "dropdown-menu",
+  menuList: state => "dropdown-content",
+  option: state => "dropdown-option",
+  menuPortal: state => "dropdown-menuportal"
+}
+
+const selectstyles = {
+  singleValue: styles => ({}),
+  control: styles => ({}),
+  container: styles => ({}),
+  menu: styles => ({}),
+  menuList: styles => ({}),
+  option: styles => ({}),
+  menuPortal: styles => ({}),
+}
+
 function todaysDate() {
   const date = new Date()
-
   let day = date.getDate()
   let month = date.getMonth() + 1
   let year = date.getFullYear()
@@ -758,7 +777,6 @@ function Body(props) {
   const [groupList, setGroupList] = useState([])
   const [subjectList, setSubjectList] = useState([])
   const [moduleList, setModuleList] = useState([])
-
   const [graphType, setGraphType] = useState([])
 
   const [systems, setSystems] = useState([])
@@ -1515,25 +1533,19 @@ function AddLog(props) {
     fetchDataAsync()
   }, [username, chosenGroup, chosenSubject, chosenModule, chosenTier.value])
  
-  
   return (
     <div className="add-log">
       add log:
       <Select
         className="form-addlog-group-list"
         classNames={
-          {
-            singleValue: state => "form-addlog-group-list-chosen",
-            control: state => "dropbtn",
-            container: state => "dropdown",
-            menu: state => "dropdown-menu",
-            menuList: state => "dropdown-content",
-            option: state => "dropdown-option",
-            menuPortal: state => "dropdown-menuportal"
-          }
+          selectclasses
+        }
+        styles={
+          selectstyles
         }
         options={
-          [{value: "test", label: "testing label"}]
+          groupList.map(i => {return {value: i.name, label: i.name}})
         }
         placeholder="select a group." 
         onChange={e => {
