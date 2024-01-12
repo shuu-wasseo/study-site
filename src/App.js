@@ -1,12 +1,16 @@
-import './App.css';
+import './App.css'
 
 import { useState, useEffect } from 'react' 
-import Cookies from 'js-cookie';
+import Cookies from 'js-cookie'
 
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, QuerySnapshot } from "firebase/firestore";
+import { initializeApp } from 'firebase/app'
+import { 
+  getFirestore, collection, getDocs, doc, setDoc, deleteDoc, updateDoc 
+} from "firebase/firestore"
 
-import { sha256 } from 'js-sha256';
+import { sha256 } from 'js-sha256'
+
+import Select from 'react-select'
 
 const firebaseConfig = {
   apiKey: "AIzaSyDtM_T9fJt4miiDDYkkWJg3XynMwWBFBMg",
@@ -17,24 +21,113 @@ const firebaseConfig = {
   messagingSenderId: "906722849841",
   appId: "1:906722849841:web:644725a219466d036a5110",
   measurementId: "G-43P6V2WZMS"
-};
+}
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const app = initializeApp(firebaseConfig)
+const db = getFirestore(app)
 
-async function fetchData(params, func, setLoading, setError) {
+const selectclasses = {
+  singleValue: state => "form-addlog-group-list-chosen",
+  control: state => "dropbtn",
+  container: state => "dropdown",
+  menu: state => "dropdown-menu",
+  menuList: state => "dropdown-content",
+  option: state => "dropdown-option",
+  menuPortal: state => "dropdown-menuportal"
+}
+
+const selectstyles = {
+  singleValue: styles => ({}),
+  control: styles => ({}),
+  container: styles => ({}),
+  menu: styles => ({}),
+  menuList: styles => ({}),
+  option: styles => ({}),
+  menuPortal: styles => ({}),
+}
+
+function todaysDate() {
+  const date = new Date()
+
+  let day = date.getDate()
+  let month = date.getMonth() + 1
+  let year = date.getFullYear()
+  let currentDate = `${year}-${month}-${day}`
+  return currentDate
+}
+
+async function fetchData(params, func, setLoading, setError, loading, purpose) {
   try {
-    const ncollection = await getDocs(collection(db, "users/" + params.join("/")))
+    const ncollection = await getDocs(
+      collection(db, "users/" + params.join("/"))
+    )
     let modifiedCollection = []
     ncollection.forEach((docu) => {
       modifiedCollection.push(docu.data())
     })
-    func(modifiedCollection)
-    setLoading(false);
+    try {
+      func(modifiedCollection)
+      setLoading(false)
+    } catch {}
+    return modifiedCollection
   } catch (error) {
-    setError(error);
     console.error(error)
-    setLoading(false);
+    try {
+      setError(error)
+      setLoading(false)
+    } catch {}
+  }
+}
+
+async function subjectTotal(username, group, subject, addedModule = { id: "" }, quantity) {
+  if (group.id && subject.id) {
+    const collection = await fetchData([
+      sha256(username), "groups",
+      sha256(group.name), "subjects",
+      sha256(subject.name), "modules"
+    ]);
+
+    let totalScore = 0;
+    let totalWeightage = 0;
+
+    for (let item of collection) {
+      totalWeightage += item.weightage;
+      if (item.id === addedModule.id) {
+        totalScore += quantity * item.weightage;
+      } else {
+        totalScore += item.tier * item.weightage;
+      }
+    }
+
+    return totalWeightage !== 0 ? (totalScore / totalWeightage) * 100 : 0;
+  } else {
+    return "?";
+  }
+}
+
+async function groupTotal(username, group, addedSubject={ id:"" }, addedModule = { id: "" }, quantity) {
+  if (group.id) {
+    const collection = await fetchData([
+      sha256(username), "groups",
+      sha256(group.name), "subjects",
+    ]);
+
+    let totalScore = 0;
+    let totalWeightage = 0;
+
+    for (let item of collection) {
+      totalWeightage += item.weightage;
+      if (item.id === addedSubject.id) {
+        totalScore += await subjectTotal(username, group, item, addedModule={id: addedModule.id}, quantity) * item.weightage;
+      } else {
+        totalScore += await subjectTotal(username, group, item) * item.weightage;
+      }
+      console.log("check", totalScore, totalWeightage)
+    }
+
+    return totalWeightage !== 0 ? (totalScore / totalWeightage) : 0;
+  } else {
+    return "?";
   }
 }
 
@@ -60,7 +153,7 @@ function checkLoggedIn(users, cookie) {
   }
 }
 
-function checkUsername(users,cookie) {
+function checkUsername(users, cookie) {
   if (!cookie) {
     return "No username found"
   }
@@ -73,7 +166,7 @@ function checkUsername(users,cookie) {
     let found = "No username found"
     users.forEach(user => {
       if (JSON.parse(cookie).password === user.account.password) {
-        found = user.account.username;
+        found = user.account.username
       }
     })
     return found
@@ -82,108 +175,696 @@ function checkUsername(users,cookie) {
   }
 }
 
-function addGroup(username, data) {
+function getCurrentUser(users, cookie) {
+  if (!cookie) {
+    return "No username found"
+  }
   try {
-    setDoc(doc(db, "users", username, "groups", data.name), data);
+    JSON.parse(cookie)
+  } catch {
+    return false
+  }
+  let foundUser = {}
+  if (users) {
+    users.forEach(user => {
+      if (JSON.parse(cookie).password === user.account.password) {
+        foundUser = user
+      }
+    })
+  } 
+  return foundUser
+}
+
+function editGroup(username, data, update=false, del=false) {
+  try {
+    let func = () => {}
+    if (update) {
+      func = updateDoc
+    } else if (del) {
+      func = deleteDoc
+    } else {
+      func = setDoc
+    }
+    func(doc(db, "users", username, "groups", data.id), data)
   } catch (error) {
-    console.error("writing document failed:", error);
+    console.error("writing document failed:", error)
   }
 }
 
-function addSubject(username, groupname, data) {
+function editSubject(username, groupname, data, update=false, del=false) {
   try {
-    setDoc(doc(db, "users", username, "groups", groupname, "subjects", data.name), data);
+    let func = () => {}
+    if (update) {
+      func = updateDoc
+    } else if (del) {
+      func = deleteDoc
+    } else {
+      func = setDoc
+    }
+    console.log(db, "users", username, "groups", groupname, "subjects", data.id)
+    func(
+      doc(db, "users", username, "groups", groupname, "subjects", data.id), 
+      data
+    )
   } catch (error) {
-    console.error("writing document failed:", error);
+    console.error("writing document failed:", error)
   }
 }
 
-function addModule(username, groupname, subjectname, data) {
+function editModule(
+  username, groupname, subjectname, data, 
+  update=false, del=false
+) {
   try {
-    setDoc(doc(db, "users", username, "groups", groupname, "subjects", subjectname, "modules", data.name), data);
+    let func = () => {}
+    if (update) {
+      func = updateDoc
+    } else if (del) {
+      func = deleteDoc
+    } else {
+      func = setDoc
+    }
+    func(doc(
+      db, 
+      "users", username, "groups", groupname, 
+      "subjects", subjectname, "modules", data.id
+    ), data)
   } catch (error) {
-    console.error("writing document failed:", error);
+    console.error("writing document failed:", error)
   }
 }
 
-function addSystem(username, data) {
+function editSystem(username, data, update=false, del=false) {
   try {
-    setDoc(doc(db, "users", username, "systems", data.name), data);
+    let func = () => {}
+    if (update) {
+      func = updateDoc
+    } else if (del) {
+      func = deleteDoc
+    } else {
+      func = setDoc
+    }
+    func(doc(db, "users", username, "systems", data.id), data)
   } catch (error) {
-    console.error("writing document failed:", error);
+    console.error("writing document failed:", error)
   }
 }
 
 function getKey(object, value) {
-  return Object.keys(object).find(key => object[key] === value);
+  return Object.keys(object).find(key => object[key] === value)
 }
 
+async function findError(newObject, list, setError) {
+  setError("")
+  if (!newObject.color.match(/^#(?:(?:[\da-f]{3}){1,2}|(?:[\da-f]{4}){1,2})$/i)) {
+    setError(`${newObject.color} is not a valid color.`)
+  } else {
+    for (let l in list) {
+      if (list[l].name === newObject.name && list[l].id != newObject.id) {
+        setError(`module with name "${newObject.name}" already exists.`)
+      } 
+    }
+  }
+  if (!newObject.name) {
+    setError("a name is required.")
+  }
+}
+
+function SubjectsBody(props) {
+  const [color, setColor] = useState(
+    Math.floor(Math.random()*16777215).toString(16)
+  )
+  const [error, setError] = useState(null)
+
+  const [color2, setColor2] = useState(
+    Math.floor(Math.random()*16777215).toString(16)
+  )
+  const [error2, setError2] = useState(null)
+
+  useEffect(() => {
+    setColor(Math.floor(Math.random()*16777215).toString(16))
+    setColor2(Math.floor(Math.random()*16777215).toString(16))
+    setError(null)
+  }, [props.chosenGroup, props.chosenSubject, props.chosenModule]) 
+  
+  function newGroup(mode="add") {
+    return {
+      id: mode === "add" ? sha256(
+        document.getElementById(`form-${mode}group-name-input`).value
+      ) : props.chosenGroup.id,
+      name: document.getElementById(`form-${mode}group-name-input`).value,
+      description: document.getElementById(
+        `form-${mode}group-description-input`
+      ).value,
+      color: document.getElementById(`form-${mode}group-color-input`).value,
+      system: document.getElementsByClassName(
+        `form-${mode}group-system-list-chosen`
+      )[0].innerHTML
+    }
+  }
+
+  function newSubject(mode="add") {
+    return {
+      id: mode === "add" ? sha256(
+        document.getElementById(`form-${mode}subject-name-input`).value
+      ) : props.chosenSubject.id,
+      name: document.getElementById(`form-${mode}subject-name-input`).value,
+      weightage: Number(document.getElementById(
+        `form-${mode}subject-weightage-input`
+      ).value),
+      color: document.getElementById(`form-${mode}subject-color-input`).value,
+    }
+  }
+
+  function newModule(mode="add", data) {
+    return {
+      id: mode === "add" ? sha256(
+        document.getElementById(`form-${mode}module-name-input`).value
+      ) : props.chosenModule.id,
+      name: document.getElementById(`form-${mode}module-name-input`).value,
+      weightage: Number(document.getElementById(
+        `form-${mode}module-weightage-input`
+      ).value),
+      color: document.getElementById(`form-${mode}module-color-input`).value,
+      tier: 0,
+      weightage: 1,
+      records: {
+        [todaysDate()]: 0
+      }
+    }
+  }
+
+  if (props.chosenGroup.name === "settings") {
+    return (
+      <div className="subjects-body">
+        <div className="add-group" onInput={
+          () => findError(newGroup(), props.groupList, setError)
+        }>
+          add group:
+          <div>
+            name: <input 
+              type="text"
+              id="form-addgroup-name-input" 
+              defaultValue="name" 
+            />
+          </div>
+          <div>
+            description: <input 
+              type="text" 
+              id="form-addgroup-description-input" 
+              defaultValue="description" 
+            />
+          </div>
+          <div style={{color: color}}>
+            color: <input 
+              type="text" 
+              id="form-addgroup-color-input" 
+              style={{color: color}} 
+              onChange={e => setColor(e.target.value)} 
+              pattern="[#0-9a-f]" 
+              defaultValue={`#${color}`} 
+            />
+          </div>
+          <div>
+            system: <Select 
+              id="form-addgroup-system-list" 
+              classNames={
+                {
+                  singleValue: state => "form-addgroup-system-list-chosen"
+                }
+              }
+              options={props.systems.map(i => {return {value: i.name, label: i.name}})} 
+              defaultValue={
+                {value: props.systems[0].name, label: props.systems[0].name}
+              }
+              placeholder="select a system." 
+            />
+          </div>
+          <span style={{color: "#f00"}}>{error}</span>
+          <button id="form-addgroup-submit-button" onClick={
+            () => {
+              findError(newGroup(), props.groupList, setError)
+              if (!error && typeof error === "string") {
+                editGroup(sha256(props.username), newGroup())
+                fetchData(
+                  [sha256(props.username), "groups"], 
+                  props.setGroupList, props.setLoading, setError
+                )
+              }
+            }
+          }>add group</button>
+        </div>
+      </div>
+    )
+  } else if (props.chosenSubject.name === "settings") {
+    return (
+      <div className="subjects-body">
+        <div 
+          className="edit-group"
+          onInput={() => findError(newGroup("edit"), props.groupList, setError)}
+        >
+          edit group:
+          <div>
+            name: <
+              input type="text" 
+              id="form-editgroup-name-input" 
+              defaultValue={props.chosenGroup.name} 
+            />
+          </div>
+          <div>
+            description: <input 
+              type="text" 
+              id="form-editgroup-description-input" 
+              defaultValue={props.chosenGroup.description} 
+            />
+          </div>
+          <div style={{color: color}}>
+            color: <input 
+              type="text" 
+              id="form-editgroup-color-input" 
+              style={{color: color}} 
+              defaultValue={props.chosenGroup.color} 
+              onChange={e => setColor(e.target.value)} 
+              pattern="[#0-9a-f]" 
+            />
+          </div>
+          <div>
+            system: <Select 
+              id="form-editgroup-system-list" 
+              classNames={
+                {
+                  singleValue: state => "form-editgroup-system-list-chosen"
+                }
+              }
+              options={props.systems.map(i => {return {value: i.name, label: i.name}})} 
+              defaultValue={props.chosenGroup.system} 
+              placeholder="select a system." 
+            />
+          </div>
+          <span style={{color: "#f00"}}>{error}</span>
+          <button id="form-editgroup-submit-button" onClick={
+            () => {
+              findError(newGroup("edit"), props.groupList, setError)
+              if (!error && typeof error === "string") {
+                editGroup(sha256(props.username), newGroup("edit"), true)
+                fetchData(
+                  [sha256(props.username), "groups"], 
+                  props.setGroupList, props.setLoading, setError
+                )
+              } 
+            }
+          }>edit group</button>
+          <button id="form-editgroup-delete-button" onClick={
+            () => {
+              editGroup(
+                sha256(props.username), 
+                {id: props.chosenGroup.id}, 
+                false, true
+              )
+              fetchData(
+                [sha256(props.username), "groups"], 
+                props.setGroupList, props.setLoading, setError
+              )
+              props.setChosenGroup(props.groupList[0])
+            }
+          }>delete group</button>
+        </div>
+        <div 
+          className="add-subject" 
+          onInput={
+            () => findError(
+              newSubject(), 
+              props.subjectList, 
+              setError2
+            )
+          }>
+          add subject:
+          <div>
+            name: <input 
+              type="text" 
+              id="form-addsubject-name-input" 
+              defaultValue="name" 
+            />
+          </div>
+          <div>
+            weightage: <input 
+              type="number" 
+              id="form-addsubject-weightage-input" 
+              min="0" 
+              pattern="[0-9.]" 
+              defaultValue="0" 
+            />
+          </div>
+          <div style={{color: color2}}>
+            color: <input 
+              type="text" 
+              id="form-addsubject-color-input" 
+              style={{color: color2}} 
+              onChange={e => setColor2(e.target.value)} 
+              pattern="[#0-9a-f]" 
+              defaultValue={`#${color}`} 
+            />
+          </div>
+          <button id="form-addsubject-submit-button" onClick={
+            () => {
+              findError(newSubject(), props.subjectList, setError)
+              if (!error) {
+                editSubject(
+                  sha256(props.username), 
+                  sha256(props.chosenGroup.name), 
+                  newSubject()
+                )
+                fetchData(
+                  [
+                    sha256(props.username), "groups", 
+                    sha256(props.chosenGroup.name), "subjects"
+                  ], 
+                  props.setSubjectList, props.setLoading, setError
+                )
+              }
+            }
+          }>add subject</button> 
+        </div>
+      </div>
+    )
+  } else if (props.chosenModule.name === "settings") {
+    return (
+      <div className="subjects-body">
+        <div 
+          className="edit-subject" 
+          onInput={
+            () => findError(newSubject("edit"), props.subjectList, setError)
+          }>
+          edit subject:
+          <div>
+            name: <input 
+              type="text" 
+              id="form-editsubject-name-input" 
+              defaultValue={props.chosenSubject.name} 
+            />
+          </div>
+          <div>
+            weightage: <input 
+              type="number" 
+              id="form-editsubject-weightage-input" 
+              min="0" 
+              defaultValue={props.chosenSubject.weightage} 
+              pattern="[0-9.]" 
+            />
+          </div>
+          <div style={{color: color}}>
+            color: <input 
+              type="text" 
+              id="form-editsubject-color-input" 
+              onChange={e => setColor(e.target.value)} 
+              defaultValue={props.chosenSubject.color} 
+              pattern="[#0-9a-f]" 
+            />
+          </div>
+          <button id="form-editsubject-submit-button" onClick={
+            () => {
+              findError(newSubject("edit"), props.subjectList, setError)
+              if (!error) {
+                editSubject(
+                  sha256(props.username), 
+                  sha256(props.chosenGroup.name), 
+                  newSubject("edit"), 
+                  true
+                )
+                fetchData(
+                  [
+                    sha256(props.username), "groups", 
+                    sha256(props.chosenGroup.name), "subjects"
+                  ], 
+                  props.setSubjectList, props.setLoading, setError
+                )
+              }
+            }
+          }>edit subject</button>
+          <button id="form-editsubject-delete-button" onClick={
+            () => {
+              editSubject(
+                sha256(props.username), 
+                sha256(props.chosenGroup.name), 
+                {id: props.chosenSubject.id}, 
+                false, true
+              )
+              fetchData(
+                [
+                  sha256(props.username), "groups", 
+                  sha256(props.chosenGroup.name), "subjects"
+                ], 
+                props.setSubjectList, props.setLoading, setError
+              )
+              props.setChosenSubject(props.subjectList[0])
+            }
+          }>delete subject</button>
+        </div>
+        <div 
+          className="add-module" 
+          onInput={() => findError(newModule(), props.moduleList, setError2)}
+        >
+          add module:
+          <div>
+            name: <input 
+              type="text" 
+              id="form-addmodule-name-input" 
+              defaultValue="name" 
+            />
+          </div>
+          <div>
+            weightage: <input 
+              type="number" 
+              id="form-addmodule-weightage-input" 
+              min="0" 
+              pattern="[0-9.]"
+              defaultValue="0" 
+            />
+          </div>
+          <div style={{color: color2}}>
+            color: <input 
+              type="text" 
+              id="form-addmodule-color-input"
+              onChange={e => setColor2(e.target.value)} 
+              pattern="[#0-9a-f]" 
+              defaultValue={`#${color}`} 
+            />
+          </div>
+          <button id="form-addmodule-submit-button" onClick={
+            () => {
+              findError(newModule(), props.moduleList, setError)
+              if (!error) {
+                editModule(
+                  sha256(props.username), 
+                  sha256(props.chosenGroup.name), 
+                  sha256(props.chosenSubject.name), 
+                  newModule()
+                )
+                fetchData(
+                  [
+                    sha256(props.username), "groups", 
+                    sha256(props.chosenGroup.name), "subjects", 
+                    sha256(props.chosenSubject.name), "modules"
+                  ], 
+                  props.setModuleList, props.setLoading, setError
+                )
+              }
+            }
+          }>add module</button>
+        </div>
+      </div>
+    )
+  } else if (
+    props.chosenGroup.name 
+      && props.chosenSubject.name 
+      && props.chosenModule.name
+  ) {
+    return (
+      <div className="subjects-body">
+        <div 
+          className="edit-module" 
+          onInput={
+            () => findError(newModule("edit"), props.moduleList, setError)
+          }
+        >
+          edit module:
+          <div>
+            name: <input 
+              type="text" 
+              id="form-editmodule-name-input" 
+              defaultValue={props.chosenModule.name} 
+            />
+          </div>
+          <div>
+            weightage: <input 
+              type="number" 
+              id="form-editmodule-weightage-input" 
+              min="0" 
+              defaultValue={props.chosenModule.weightage} 
+              pattern="[0-9.]" 
+            />
+          </div>
+          <div style={{color: color}}>
+            color: <input 
+              type="text" 
+              id="form-editmodule-color-input" 
+              onChange={e => setColor(e.target.value)} 
+              defaultValue={props.chosenModule.color} 
+              pattern="[#0-9a-f]" 
+            /> 
+          </div>
+          <button id="form-editmodule-submit-button" onClick={
+            () => {
+              findError(newModule("edit"), props.moduleList, setError)
+              if (!error) {
+                editModule(
+                  sha256(props.username), 
+                  sha256(props.chosenGroup.name), 
+                  sha256(props.chosenSubject.name), 
+                  newModule("edit"), 
+                  true
+                )
+                fetchData(
+                  [
+                    sha256(props.username), "groups", 
+                    sha256(props.chosenGroup.name), "subjects", 
+                    sha256(props.chosenSubject.name), "modules"
+                  ], 
+                  props.setModuleList, props.setLoading, setError
+                )
+              }
+            }
+          }>edit module</button>
+          <button id="form-editmodule-delete-button" onClick={
+            () => {
+              editModule(
+                sha256(props.username), 
+                sha256(props.chosenGroup.name), 
+                sha256(props.chosenSubject.name), 
+                {id: props.chosenModule.id}, 
+                false, true
+              )
+              fetchData(
+                [
+                  sha256(props.username), "groups", 
+                  sha256(props.chosenGroup.name), "subjects"
+                ], 
+                sha256(props.chosenSubject.name), "modules", 
+                props.setModuleList, props.setLoading, setError
+              )
+              props.setChosenModule(props.moduleList[0])
+            }
+          }>delete module</button>
+        </div>
+      </div>
+    )
+  }
+}
 
 function Body(props) {
   const [users, setUsers] = useState(props.users)
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null)
 
-  const [loggedIn, setLoggedIn] = useState(checkLoggedIn(users, Cookies.get("loggedIn")))
+  const [loggedIn, setLoggedIn] = useState(
+    checkLoggedIn(users, Cookies.get("loggedIn"))
+  )
   const [signingUp, setSigningUp] = useState(false)
-  const [errorMessage, setErrorMessage] = useState("")
 
-  const [groupList, setGroupList] = useState([]);
-  const [subjectList, setSubjectList] = useState([]);
+  const [chosenGroup, setChosenGroup] = useState({})  
+  const [chosenSubject, setChosenSubject] = useState({})  
+  const [chosenModule, setChosenModule] = useState({})
+
+  const [groupList, setGroupList] = useState([])
+  const [subjectList, setSubjectList] = useState([])
   const [moduleList, setModuleList] = useState([])
 
-  const [chosenGroup, setChosenGroup] = useState({})
-  const [chosenSubject, setChosenSubject] = useState({})
-  const [chosenModule, setChosenModule] = useState({})
+  const [systems, setSystems] = useState([])
 
   useEffect(() => {
     setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
 
-    fetchData([], setUsers, setLoading, setError)
+    fetchData([], setUsers, props.setLoading, setError)
+    try {
+      let username = JSON.parse(Cookies.get("loggedIn")).username
+      if (checkLoggedIn(users, Cookies.get("loggedIn"))) {
+        fetchData(
+          [sha256(username), "groups"], 
+          setGroupList, props.setLoading, setError
+        )
+        fetchData(
+          [sha256(username), "systems"], 
+          setSystems, props.setLoading, setError
+        )
+      }
+    } catch (e) {console.error(e)}
+
+  }, [props.tab, loggedIn, error])
+
+  useEffect(() => {
     try {
       let username = JSON.parse(Cookies.get("loggedIn")).username
       if (checkLoggedIn(users, Cookies.get("loggedIn")) && props.tab === 1) {
-        fetchData([username, "groups"], setGroupList, setLoading, setError)
         if (Object.keys(chosenGroup).length) {
-          fetchData([username, "groups", chosenGroup.name, "subjects"], setSubjectList, setLoading, setError)
+          fetchData(
+            [
+              sha256(username), "groups", 
+              sha256(chosenGroup.name), "subjects"
+            ], 
+            setSubjectList, props.setLoading, setError
+          )
         }
         if (Object.keys(chosenSubject).length) {
-          fetchData([username, "groups", chosenGroup.name, "subjects", chosenSubject.name, "modules"], setModuleList, setLoading, setError)
+          fetchData(
+            [
+              sha256(username), "groups", 
+              sha256(chosenGroup.name), "subjects", 
+              sha256(chosenSubject.name), "modules"
+            ], 
+            setModuleList, props.setLoading, setError
+          )
         }
       }
-    } catch(e) {
-      console.error(e)
-    }
-  }, [errorMessage, users, chosenGroup, chosenSubject])
+    } catch (e) {console.error(e)}
+  }, [props.tab, loggedIn, chosenGroup, chosenSubject])
 
   function logIn() {
-    setErrorMessage("")
-    fetchData([], setUsers, setLoading, setError)
+    setError("")
+    fetchData([], setUsers, props.setLoading, setError)
 
-    const givenUsername = document.getElementById('username-input').value
-    const givenPassword = document.getElementById('password-input').value
+    const givenUsername = document.getElementById(
+      'form-login-username-input'
+    ).value
+    const givenPassword = document.getElementById(
+      'form-login-password-input'
+    ).value
     
     let found = false
     users.forEach((user) => {
       if (user.account.username === givenUsername) {
         found = true
         if (user.account.password === sha256(givenUsername + givenPassword)) {
-          Cookies.set("loggedIn", JSON.stringify({username: givenUsername, password: sha256(givenUsername + givenPassword)}), { expires: 365 })
+          Cookies.set(
+            "loggedIn", 
+            JSON.stringify({
+              username: givenUsername, 
+              password: sha256(givenUsername + givenPassword)
+            }), 
+            { expires: 365 })
           setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
         } else {
-          setErrorMessage("wrong password.")
+          setError("wrong password.")
         }
       }
     })
     if (!found) {
-      setErrorMessage("invalid username.")
+      setError("invalid username.")
     }
     if (givenUsername === null) {
-      setErrorMessage("Fields cannot be empty.")
+      setError("Fields cannot be empty.")
     }
     if (givenPassword === null) {
-      setErrorMessage("Fields cannot be empty.")
+      setError("Fields cannot be empty.")
     }
   }
 
@@ -193,12 +874,18 @@ function Body(props) {
   }
 
   function signUp() {
-    setErrorMessage("")
-    fetchData([], setUsers, setLoading, setError)
+    setError("")
+    fetchData([], setUsers, props.setLoading, setError)
 
-    const givenUsername = document.getElementById('username-input').value
-    const givenPassword = document.getElementById('password-input').value
-    const confirmPassword = document.getElementById('password-input-confirm').value
+    const givenUsername = document.getElementById(
+      'form-login-username-input'
+    ).value
+    const givenPassword = document.getElementById(
+      'form-login-password-input'
+    ).value
+    const confirmPassword = document.getElementById(
+      'form-login-password-input-confirm'
+    ).value
     let found = false
     users.forEach((user) => {
       if (user.account.username === givenUsername) {
@@ -206,201 +893,225 @@ function Body(props) {
       }
     })
     if (found) {
-      setErrorMessage("username already taken.")
+      setError("username already taken.")
       return
     }
     if (givenPassword !== confirmPassword) {
-      setErrorMessage("passwords do not match.")
+      setError("passwords do not match.")
     } else {
       let exception = false
       try {
-        setDoc(doc(db, "users", givenUsername), {
+        setDoc(doc(db, "users", sha256(givenUsername)), {
           account: {
+            id: sha256(givenUsername),
             username: givenUsername,
             password: sha256(givenUsername + givenPassword),
-            profile_image: "https://i.pinimg.com/custom_covers/222x/85498161615209203_1636332751.jpg"
+            profile_image: "https://i.pinimg.com/custom_covers/222x/85498161615209203_1636332751.jpg", 
           },
+          tiers: [
+            {
+              name: "no",
+              value: 0,
+              color: "#f00"
+            },
+            {
+              name: "yes",
+              value: 1,
+              color: "#0f0"
+            }
+          ]
         })
-        addGroup(givenUsername, {
+        editGroup(sha256(givenUsername), {
+          id: sha256("sample group"),
           name: "sample group",
           description: "sample description",
+          color: "#ffffff",
           system: "MSG"
-        });
-        addSubject(givenUsername, "sample group", {
+        })
+        editSubject(sha256(givenUsername), sha256("sample group"), {
+          id: sha256("sample subject"),
           name: "sample subject",
           weightage: 1,
-          colour: "#ffffff"
-        });
-        addModule(givenUsername, "sample group", "sample subject", {
-          name: "sample module",
-          tier: 0,
-          weightage: 1,
-          records: {
-            "1702651632011": 0
+          color: "#ffffff"
+        })
+        editModule(
+          sha256(givenUsername), 
+          sha256("sample group"), 
+          sha256("sample subject"), 
+          {
+            id: sha256("sample module"),
+            name: "sample module",
+            tier: 0,
+            weightage: 1,
+            color: "#ffffff",
+            records: {
+              [todaysDate()]: 0
+            }
           }
-        });
-        addSystem(givenUsername, {
-          name: "MSG", bands: {
+        )
+        editSystem(sha256(givenUsername), {
+          id: sha256("MSG"),
+          name: "MSG", 
+          bands: {
             A1: {
               condition: "(i) => {return i >= 75}", 
-              colour: "#ff0000",
+              color: "#ff0000",
             },
             A2: {
               condition: "(i) => {return i >= 70 && i < 75}", 
-              colour: "#ffaa00"
+              color: "#ffaa00"
             },
             B3: {
               condition: "(i) => {return i >= 65 && i < 70}", 
-              colour: "#aaff00"
+              color: "#aaff00"
             },
             B4: {
               condition: "(i) => {return i >= 60 && i < 65}", 
-              colour: "#00ff00"
+              color: "#00ff00"
             }, 
             C5: {
               condition: "(i) => {return i >= 55 && i < 60}", 
-              colour: "#00ffaa"
+              color: "#00ffaa"
             }, 
             C6: {
               condition: "(i) => {return i >= 50 && i < 55}", 
-              colour: "#00aaff"
+              color: "#00aaff"
             }, 
             D7: {
               condition: "(i) => {return i >= 45 && i < 50}", 
-              colour: "#0000ff"
+              color: "#0000ff"
             }, 
             E8: {
               condition: "(i) => {return i >= 40 && i < 45}", 
-              colour: "#aa00ff"
+              color: "#aa00ff"
             }, 
             F9: {
               condition: "(i) => {return i < 40}", 
-              colour: "#ff00aa"
-            }
-          }
-        });
-        addSystem(givenUsername, {
-          name: "GPA 1", bands: {
-            "A+": {
-              condition: "(i) => {return i >= 80}", 
-              colour: "#a65bf5"
-            },
-            A: {
-              condition: "(i) => {return i >= 70 && i < 80}", 
-              colour: "#a53ef4"
-            },
-            "B+": {
-              condition: "(i) => {return i >= 65 && i < 70}", 
-              colour: "#a921f2"
-            },
-            B: {
-              condition: "(i) => {return i >= 60 && i < 65}", 
-              colour: "#ad0de7"
-            },
-            "C+": {
-              condition: "(i) => {return i >= 55 && i < 60}", 
-              colour: "#a65bf5"
-            },
-            C: {
-              condition: "(i) => {return i >= 50 && i < 55}", 
-              colour: "#a70cca"
-            },
-            D: {
-              condition: "(i) => {return i >= 45 && i < 50}", 
-              colour: "#9d0aae"
-            },
-            E: {
-              condition: "(i) => {return i >= 40 && i < 45}", 
-              colour: "#8e0891"
-            },
-            F: {
-              condition: "(i) => {return i < 40}", 
-              colour: "#74076c"
-            }
-          }
-        });
-        addSystem(givenUsername, {
-          name: "GPA 2", bands: {
-            "A+": {
-              condition: "(i) => {return i >= 85}", 
-              colour: "#2bf3d1"
-            },
-            A: {
-              condition: "(i) => {return i >= 70 && i < 85}", 
-              colour: "#19e6d8"
-            },
-            "B+": {
-              condition: "(i) => {return i >= 65 && i < 70}", 
-              colour: "#21bbc0"
-            },
-            B: {
-              condition: "(i) => {return i >= 60 && i < 65}", 
-              colour: "#258d9d"
-            },
-            "C+": {
-              condition: "(i) => {return i >= 55 && i < 60}", 
-              colour: "#26697d"
-            },
-            C: {
-              condition: "(i) => {return i >= 50 && i < 55}", 
-              colour: "#254c5f"
-            },
-            "C-": {
-              condition: "(i) => {return i >= 45 && i < 50}", 
-              colour: "#213545"
-            },
-            "D+": {
-              condition: "(i) => {return i >= 40 && i < 45}", 
-              colour: "#1a232d"
-            },
-            D: {
-              condition: "(i) => {return i >= 35 && i < 40}", 
-              colour: "#1a212d"
-            },
-            E: {
-              condition: "(i) => {return i >= 20 && i < 35}", 
-              colour: "#1a1f2d"
-            },
-            U: {
-              condition: "(i) => {return i < 20}", 
-              colour: "#1a1e2d"
-            }
-          }
-        });
-        addSystem(givenUsername, {
-          name: "yesAndNo", bands: {
-            "Yes": {
-              condition: "(i) => {return i == 100}", 
-              colour: "#00ff33"
-            },
-            "No": {
-              condition: "(i) => {return i == 0}", 
-              colour: "#ff0000"
+              color: "#ff00aa"
             }
           }
         })
+        editSystem(sha256(givenUsername), {
+          id: sha256("GPA 1"),
+          name: "GPA 1", 
+          bands: {
+            "A+": {
+              condition: "(i) => {return i >= 80}", 
+              color: "#a65bf5"
+            },
+            A: {
+              condition: "(i) => {return i >= 70 && i < 80}", 
+              color: "#a53ef4"
+            },
+            "B+": {
+              condition: "(i) => {return i >= 65 && i < 70}", 
+              color: "#a921f2"
+            },
+            B: {
+              condition: "(i) => {return i >= 60 && i < 65}", 
+              color: "#ad0de7"
+            },
+            "C+": {
+              condition: "(i) => {return i >= 55 && i < 60}", 
+              color: "#a65bf5"
+            },
+            C: {
+              condition: "(i) => {return i >= 50 && i < 55}", 
+              color: "#a70cca"
+            },
+            D: {
+              condition: "(i) => {return i >= 45 && i < 50}", 
+              color: "#9d0aae"
+            },
+            E: {
+              condition: "(i) => {return i >= 40 && i < 45}", 
+              color: "#8e0891"
+            },
+            F: {
+              condition: "(i) => {return i < 40}", 
+              color: "#74076c"
+            }
+          }
+        })
+        editSystem(sha256(givenUsername), {
+          id: sha256("GPA 2"),
+          name: "GPA 2", 
+          bands: {
+            "A+": {
+              condition: "(i) => {return i >= 85}", 
+              color: "#2bf3d1"
+            },
+            A: {
+              condition: "(i) => {return i >= 70 && i < 85}", 
+              color: "#19e6d8"
+            },
+            "B+": {
+              condition: "(i) => {return i >= 65 && i < 70}", 
+              color: "#21bbc0"
+            },
+            B: {
+              condition: "(i) => {return i >= 60 && i < 65}", 
+              color: "#258d9d"
+            },
+            "C+": {
+              condition: "(i) => {return i >= 55 && i < 60}", 
+              color: "#26697d"
+            },
+            C: {
+              condition: "(i) => {return i >= 50 && i < 55}", 
+              color: "#254c5f"
+            },
+            "C-": {
+              condition: "(i) => {return i >= 45 && i < 50}", 
+              color: "#213545"
+            },
+            "D+": {
+              condition: "(i) => {return i >= 40 && i < 45}", 
+              color: "#1a232d"
+            },
+            D: {
+              condition: "(i) => {return i >= 35 && i < 40}", 
+              color: "#1a212d"
+            },
+            E: {
+              condition: "(i) => {return i >= 20 && i < 35}", 
+              color: "#1a1f2d"
+            },
+            U: {
+              condition: "(i) => {return i < 20}", 
+              color: "#1a1e2d"
+            }
+          }
+        }) 
       } catch (error) {
-        console.error("writing document failed:", error);
+        console.error("writing document failed:", error)
         exception = error
       } 
       if (!exception) {
-        Cookies.set("loggedIn", JSON.stringify({username: givenUsername, password: sha256(givenUsername + givenPassword)}), { expires: 365 })
-        fetchData([], setUsers, setLoading, setError)
+        Cookies.set(
+          "loggedIn", 
+          JSON.stringify({
+            username: givenUsername, 
+            password: sha256(givenUsername + givenPassword)
+          }), 
+          { expires: 365 }
+        )
+        fetchData([], setUsers, props.setLoading, setError)
         setLoggedIn(checkLoggedIn(users, Cookies.get("loggedIn")))
       } else {
         deleteDoc(doc(db, "users", givenUsername))
       }
     }
     if (givenUsername === null) {
-      setErrorMessage("Fields cannot be empty.")
+      setError("Fields cannot be empty.")
     }
     if (givenPassword === null) {
-      setErrorMessage("Fields cannot be empty.")
+      setError("Fields cannot be empty.")
     }
   }
-
+ 
   if (props.error) {
-    return ("lmfao error")
+    return (<div className='body'>{String(props.error)}</div>)
   } else if (props.loading) {
     return (
       <div className="body"> 
@@ -422,40 +1133,125 @@ function Body(props) {
           </div>
         )
       case 1:
+        if (props.loading) {
+          return (
+            <div className="body"> 
+              loading...
+            </div>
+          )
+        }
         return (
           <div className="body">
             <div className="side-panel groups">
               {
-                groupList.map((group) => { 
-                  return <button className={`side-panel-item ${chosenGroup === group ? "selected" : ""}`} onClick={() => {setChosenGroup(group); setChosenSubject(""); setChosenModule("")}}>{group.name}</button>
+                groupList.map((group) => {
+                  return <button 
+                    className={
+                      `side-panel-item 
+                      ${chosenGroup.id === group.id ? "selected" : ""}`
+                    } 
+                    style={{color: group.color}} 
+                    onClick={
+                      () => {
+                        setChosenGroup(group)
+                        setChosenSubject({name: "settings"})
+                        setChosenModule({})
+                      }
+                    }
+                  >{group.name}</button>
                 })
               }
-              <button className={`side-panel-item ${chosenGroup === "settings" ? "selected" : ""}`} onClick={() => {setChosenGroup({name: "settings"})}}>settings</button>
+              <button 
+                className={
+                  `side-panel-item 
+                  ${chosenGroup.name === "settings" ? "selected" : ""}`
+                } 
+                onClick={
+                  () => {
+                    setChosenGroup({name: "settings"})
+                    setChosenSubject({})
+                    setChosenModule({})
+                  }
+                }
+              >overall settings</button>
             </div>
-            chosenGroup.name === "settings" ? <div></div> : <div className="side-panel subjects">
-              { 
-                !chosenGroup ? "pick a group first!" : !subjectList ? "add a subject!" :
-                (
-                  subjectList.map((subject) => { 
-                    return <button className={`side-panel-item ${chosenSubject === subject ? "selected" : ""}`} onClick={() => {setChosenSubject(subject); setChosenModule("")}}>{subject.name}</button>
+            {
+              chosenGroup.name === "settings" ? <div></div> : 
+                !Object.keys(chosenGroup).length ? "select a group first." : 
+                  !subjectList ? "add a subject!" : <div 
+                    className="side-panel subjects"
+                  >
+                { 
+                  subjectList.map((subject) => {
+                    return <button 
+                      className={
+                        `side-panel-item 
+                        ${chosenSubject.id === subject.id ? "selected" : ""}`
+                      } 
+                      style={{color: subject.color}} 
+                      onClick={
+                        () => {
+                          setChosenSubject(subject)
+                          setChosenModule({name: "settings"})
+                        }
+                      }
+                    >{subject.name}</button>
                   })
-                  <button>settings</button>
-                )
-              }
-            </div>
-            chosenGroup.name === "settings" && chosenSubject.name === "settings" ? <div></div> : <div className="side-panel modules">
-              {
-                !chosenSubject ? "pick a subject first!" : !moduleList ? "add a module!" :
-                (
+                }
+                <button 
+                  className={
+                    `side-panel-item 
+                    ${chosenSubject.name === "settings" ? "selected" : ""}`
+                  } 
+                  onClick={
+                    () => {
+                      setChosenSubject({name: "settings"}); setChosenModule({})
+                    }
+                  }
+                >group settings</button>
+              </div>
+            }
+            {
+              chosenGroup.name === "settings" 
+                || chosenSubject.name === "settings" 
+                ? <div></div> : 
+                !Object.keys(chosenSubject).length ? (
+                  Object.keys(chosenGroup).length ? "select a subject first." : ""
+                ) : 
+                  !moduleList ? "add a module!" :
+                  <div className="side-panel modules">
+                {
                   moduleList.map((module) => { 
-                    return <button className={`side-panel-item ${chosenModule === module ? "selected" : ""}`} onClick={() => {setChosenModule(module)}}>{module.name}</button>
+                    return <button 
+                      className={
+                        `side-panel-item 
+                        ${chosenModule.id === module.id ? "selected" : ""}`
+                      } 
+                      style={{color: module.color}} 
+                      onClick={() => {setChosenModule(module)}}
+                    >{module.name}</button>
                   })
-                  <button className={`side-panel-item ${chosenModule === "settings" ? "selected" : ""}`} onClick={() => {setChosenModule({name: "settings"})}}>settings</button>
-                )
-              }
-            </div>
-            <div id="main">
-            </div>
+                }
+                <button 
+                  className={
+                    `side-panel-item 
+                    ${chosenModule.name === "settings" ? "selected" : ""}`
+                  } 
+                  onClick={() => {setChosenModule({name: "settings"})}}
+                >subject settings</button>
+              </div>
+            }
+            <SubjectsBody 
+              username={checkUsername(users, Cookies.get("loggedIn"))} 
+              groupList={groupList} setGroupList={setGroupList} 
+              subjectList={subjectList} setSubjectList={setSubjectList} 
+              moduleList={moduleList} setModuleList={setModuleList} 
+              chosenGroup={chosenGroup} setChosenGroup={setChosenGroup} 
+              chosenSubject={chosenSubject} setChosenSubject={setChosenSubject} 
+              chosenModule={chosenModule} setChosenModule={setChosenModule} 
+              systems={systems} 
+              setLoading={props.setLoading} 
+            />
           </div>
         )
       case 2:
@@ -470,32 +1266,61 @@ function Body(props) {
             if (!signingUp) {
               return (
                 <div className="body">
-                  <p>
-                    username: <input type="text" id="username-input" />
-                  </p>
-                  <p>
-                    password: <input type="text" id="password-input" />
-                  </p>
-                  <button className="button" id="login-submit-button" onClick={logIn}>submit</button>
-                  <p style={{color: "red"}}>{errorMessage}</p>
-                  <p>if you don't have an account yet, sign up <a onClick={() => setSigningUp(true)}>here</a>.</p>
+                  <div>
+                    username: <input 
+                      type="text" 
+                      id="form-login-username-input" 
+                    />
+                  </div>
+                  <div>
+                    password: <input 
+                      type="password" 
+                      id="form-login-password-input" 
+                    />
+                  </div>
+                  <button 
+                    className="button" 
+                    id="form-login-submit-button" 
+                    onClick={logIn}
+                  >log in</button>
+                  <div style={{color: "red"}}>{error}</div>
+                  <div>
+                    if you don't have an account yet, sign up 
+                    <a onClick={() => setSigningUp(true)}>here</a>.
+                  </div>
                 </div>
               )
             } else {
               return (
                 <div className="body">
-                  <p>
-                    username: <input type="text" id="username-input" />
-                  </p>
-                  <p>
-                    password: <input type="text" id="password-input" />
-                  </p>
-                  <p>
-                    confirm password: <input type="text" id="password-input-confirm" />
-                  </p>
-                  <button className="button" id="login-submit-button" onClick={signUp}>submit</button>
-                  <p style={{color: "red"}}>{errorMessage}</p>
-                  <p>if you already have an account, log in <a onClick={() => setSigningUp(false)}>here</a>.</p>
+                  <div>
+                    username: <input 
+                      type="text" 
+                      id="form-login-username-input" 
+                    />
+                  </div>
+                  <div>
+                    password: <input 
+                      type="password" 
+                      id="form-login-password-input" 
+                    />
+                  </div>
+                  <div>
+                    confirm password: <input 
+                      type="password" 
+                      id="form-login-password-input-confirm" 
+                    />
+                  </div>
+                  <button 
+                    className="button" 
+                    id="form-login-submit-button" 
+                    onClick={signUp}
+                  >sign up</button>
+                  <div style={{color: "red"}}>{error}</div>
+                  <div>
+                    if you already have an account, log in 
+                    <a onClick={() => setSigningUp(false)}>here</a>.
+                  </div>
                 </div>
               )
             }
@@ -510,17 +1335,273 @@ function Body(props) {
           )  
         }
       default:
-        return (checkLoggedIn(users, Cookies.get("loggedIn")) ? "youre logged in yay!" : "uhh yeah um")
+        return checkLoggedIn(
+          users, Cookies.get("loggedIn")
+        ) ? "youre logged in yay!" : "uhh yeah um"
     }
   }
+}
+
+function AddLog(props) {
+  const [error, setError] = useState("")
+  const [loggedIn, setLoggedIn] = useState(checkLoggedIn(props.users, Cookies.get("loggedIn")))
+
+  const [tiers, setTiers] = useState([])
+
+  const [username, setUsername] = useState("")
+
+  const [chosenGroup, setChosenGroup] = useState({})  
+  const [chosenSubject, setChosenSubject] = useState({})  
+  const [chosenModule, setChosenModule] = useState({})
+  const [chosenTier, setChosenTier] = useState({})
+
+  const [groupList, setGroupList] = useState([])
+  const [subjectList, setSubjectList] = useState([])
+  const [moduleList, setModuleList] = useState([])
+
+  const [subjectTotals, setSubjectTotals] = useState([0, 0])
+  const [groupTotals, setGroupTotals] = useState([0, 0])
+
+  useEffect(() => {
+    setLoggedIn(checkLoggedIn(props.users, Cookies.get("loggedIn")))
+
+    fetchData([], props.setUsers, props.setLoading, setError)
+    try {
+      let username = JSON.parse(Cookies.get("loggedIn")).username
+      if (checkLoggedIn(props.users, Cookies.get("loggedIn"))) {
+        fetchData(
+          [sha256(username), "groups"], 
+          setGroupList, props.setLoading, setError
+        )
+      }
+    } catch (e) {console.error(e)}
+    const currentUser = getCurrentUser(props.users, Cookies.get("loggedIn"))
+    if (Object.keys(currentUser).length) {
+      setTiers(currentUser.tiers)
+      setUsername(currentUser.account.username)
+    }
+  }, [props.tab, loggedIn, error])
+
+  useEffect(() => {
+    try {
+      let username = JSON.parse(Cookies.get("loggedIn")).username
+      if (checkLoggedIn(props.users, Cookies.get("loggedIn"))) {
+        if (chosenGroup.name) {
+          fetchData(
+            [
+              sha256(username), "groups", 
+              sha256(chosenGroup.name), "subjects"
+            ], 
+            setSubjectList, props.setLoading, setError
+          )
+        }
+        if (chosenSubject.name) {
+          fetchData(
+            [
+              sha256(username), "groups", 
+              sha256(chosenGroup.name), "subjects", 
+              sha256(chosenSubject.name), "modules"
+            ], 
+            setModuleList, props.setLoading, setError
+          )
+        }
+      }
+    } catch (e) {console.error(e)}
+  }, [props.tab, loggedIn, chosenGroup, chosenSubject])
+
+  useEffect(() => {
+    const fetchDataAsync = async () => {
+      const total1 = await subjectTotal(
+        username, 
+        chosenGroup, 
+        chosenSubject
+      )
+      const total2 = await subjectTotal(
+        username, 
+        chosenGroup, 
+        chosenSubject, 
+        chosenModule, 
+        typeof chosenTier.value === "number" ? chosenTier.value : 0
+      )
+      setSubjectTotals([total1, total2])
+
+      const total3 = await groupTotal(
+        username, 
+        chosenGroup 
+      )
+      const total4 = await groupTotal(
+        username, 
+        chosenGroup, 
+        chosenSubject,
+        chosenModule, 
+        typeof chosenTier.value === "number" ? chosenTier.value : 0
+      )
+      setGroupTotals([total3, total4])
+    }
+    fetchDataAsync()
+  }, [username, chosenGroup, chosenSubject, chosenModule, chosenTier.value])
+ 
+  return (
+    <div className="add-log">
+      add log:
+      <Select
+        className="form-addlog-group-list"
+        classNames={
+          selectclasses
+        }
+        styles={
+          selectstyles
+        }
+        options={
+          [{value: "test", label: "testing label"}]
+        }
+        placeholder="select a group." 
+        onChange={e => {
+          setChosenGroup(e.value);
+        }}
+      />
+      { 
+        chosenGroup 
+          ? <Select 
+            className="form-addlog-subject-list"
+            classNames={
+              selectclasses
+            }
+            styles={selectstyles}
+            options={
+              subjectList.map(i => {return {value: i, label: i.name}})
+            } 
+            placeholder="select a subject." 
+            onChange={e => {
+              setChosenSubject(e.value)
+            }}
+          />
+          : <Select
+            isDisabled={true}
+            className="form-addlog-subject-list"
+            classNames={
+              selectclasses
+            }
+            styles={selectstyles}
+            placeholder="select a group first." 
+          />
+      }
+      { 
+        chosenSubject 
+          ? <Select 
+            className="form-addlog-module-list"
+            classNames={
+              selectclasses
+            }
+            styles={selectstyles}
+            options={
+              moduleList.map(i => {return {value: i, label: i.name}})
+            } 
+            placeholder="select a module." 
+            onChange={e => {
+              setChosenModule(e.value)
+            }}
+          />
+          : <Select
+            isDisabled={true}
+            className="form-addlog-module-list"
+            classNames={
+              selectclasses
+            }
+            styles={selectstyles}
+            placeholder={chosenGroup ? "select a subject first." : "select a group first."}
+          />
+      }
+      {
+        chosenModule ? <div>
+          <div>
+            progress: <Select 
+            className="form-addlog-progress-list"
+            classNames={
+              selectclasses
+            }
+            styles={selectstyles}
+            options={tiers.map(tier => {return {value: tier, label: tier.name}})}
+            onChange={
+              (e) => {
+                setChosenTier(e.value)
+              }
+            }
+            placeholder="select a tier."
+            />
+          </div>
+          <div>
+            description: <input 
+              type="text" 
+              id="form-addlog-progress-input"
+            />
+          </div>
+          <button onClick={
+            () => {
+              editModule(
+                sha256(username), 
+                sha256(chosenGroup.name), 
+                sha256(chosenSubject.name), 
+                {
+                  id: chosenModule.id,
+                  tier: chosenTier.value,
+                  [`records.${todaysDate()}`]: chosenTier.value
+                }, 
+                true
+              )
+              fetchData(
+                [
+                  sha256(username), "groups", 
+                  sha256(chosenGroup.name), "subjects", 
+                  sha256(chosenSubject.name), "modules"
+                ], 
+                props.setModuleList, props.setLoading, setError
+              )
+              // add to log 
+            }
+          }>add log</button>
+          <div>
+            <p>module score: {
+              typeof chosenModule.tier === "number" 
+                ? Math.round(chosenModule.tier / (tiers.length - 1) * 10000) / 100
+                : "?"
+            } → {
+              typeof chosenTier.value === "number" 
+                ? Math.round(chosenTier.value / (tiers.length - 1) * 10000) / 100
+                : "?"
+            }</p>
+            <p>subject score: {
+              typeof subjectTotals[0] === "number"
+                ? Math.round(subjectTotals[0] * 100) / 100
+                : "?"
+            } → {
+              typeof subjectTotals[1] === "number"
+                ? Math.round(subjectTotals[1] * 100) / 100
+                : "?"
+            }</p>
+            <p>group score: {
+              typeof groupTotals[0] === "number"
+                ? Math.round(groupTotals[0] * 100) / 100
+                : "?"
+            } → {
+              typeof groupTotals[1] === "number"
+                ? Math.round(groupTotals[1] * 100) / 100
+                : "?"
+            }</p>
+          </div>
+        </div> : null
+      }
+
+    </div>
+  )
 }
 
 function App() {
   const [tab, setTab] = useState(0)
 
-  const [users, setUsers] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [users, setUsers] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     fetchData([], setUsers, setLoading, setError)
@@ -529,12 +1610,30 @@ function App() {
   const navbar = (
     <div className="navbar">
       <div className="header left">
-        <button className="header-children" onClick={() => setTab(0)}>logo</button>
-        <button className="header-children" onClick={() => setTab(1)}>subjects</button> 
-        <button className="header-children" onClick={() => setTab(2)}>stats</button> 
+        <button 
+          className="header-children" 
+          onClick={() => setTab(0)}
+        >home</button>
+        <button 
+          className="header-children" 
+          onClick={() => setTab(1)}
+        >subjects</button> 
+        <button 
+          className="header-children" 
+          onClick={() => setTab(2)}
+        >stats</button> 
       </div>
       <div className="header right">
-        <button className="header-children" onClick={() => setTab(3)}>{checkLoggedIn(users, Cookies.get("loggedIn")) ? "account" : "log in / sign up"}</button>
+        <button 
+          className="header-children" 
+          onClick={() => setTab(3)}
+        >
+          {
+            checkLoggedIn(
+              users, Cookies.get("loggedIn")
+            ) ? "account" : "log in / sign up"
+          }
+        </button>
       </div>
     </div>
   )
@@ -544,9 +1643,19 @@ function App() {
       <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-app-compat.js"></script>
       <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore-compat.js"></script>
       {navbar}
-      <Body tab={tab} users={users} loading={loading} error={error} />
+      <Body 
+        tab={tab} 
+        users={users} setUsers={setUsers} 
+        loading={loading} setLoading={setLoading} 
+        error={error} 
+      />
+      <AddLog 
+        tab={tab}
+        users={users} setUsers={setUsers}
+        setLoading={setLoading} 
+      />
     </div>
-  );
+  )
 }
 
-export default App;
+export default App
