@@ -759,6 +759,8 @@ function Body(props) {
   const [subjectList, setSubjectList] = useState([])
   const [moduleList, setModuleList] = useState([])
 
+  const [graphType, setGraphType] = useState([])
+
   const [systems, setSystems] = useState([])
 
   useEffect(() => {
@@ -1242,24 +1244,92 @@ function Body(props) {
             </div>
           )
         } else {
+          console.log(chosenGroup, chosenSubject, chosenModule, moduleList)
           return (
             <div className="body">
               here are all your stats!
               <div>
                 <Select
-                  className="form-stats-timegraph-group-list"
+                  className="form-stats-type-list"
                   classNames={{
-                    singleValue: (state) => "form-addlog-group-list-chosen",
+                    singleValue: (state) => "form-stats-type-list-chosen",
                     control: (state) => "dropbtn",
                     container: (state) => "dropdown",
                     menuList: (state) => "dropdown-content",
                   }}
-                  options={groupList.map((i) => ({ value: i, label: i.name }))}
-                  placeholder="select a group."
+                  options={["line", "bar"].map((i) => ({ value: i, label: i }))}
+                  placeholder="select a graph type."
                   onChange={(e) => {
-                    setChosenGroup(e.value);
+                    setGraphType(e.value);
                   }}
                 />
+                <Select
+                  className="form-stats-group-list"
+                  classNames={{
+                    singleValue: (state) => "form-stats-group-list-chosen",
+                    control: (state) => "dropbtn",
+                    container: (state) => "dropdown",
+                    menuList: (state) => "dropdown-content",
+                  }}
+                  options={groupList.map((i) => ({ ...i, value: i, label: i.name }))}
+                  placeholder="select a group."
+                  onChange={(e) => {
+                    setChosenGroup(e);
+                  }}
+                />
+                {
+                  chosenGroup.label ? <Select
+                    className="form-stats-subject-list"
+                    classNames={{
+                      singleValue: (state) => "form-stats-subject-list-chosen",
+                      control: (state) => "dropbtn",
+                      container: (state) => "dropdown",
+                      menuList: (state) => "dropdown-content",
+                    }}
+                    options={subjectList.map((i) => ({ ...i, value: i, label: i.name }))}
+                    placeholder="select a subject."
+                    onChange={(e) => {
+                      setChosenSubject(e);
+                      console.log("converted", e)
+                    }}
+                  /> : <Select
+                    isDisabled={true} 
+                    className="form-stats-subject-list"
+                    classNames={{
+                      singleValue: (state) => "form-stats-subject-list-chosen",
+                      control: (state) => "dropbtn",
+                      container: (state) => "dropdown",
+                      menuList: (state) => "dropdown-content",
+                    }}
+                    placeholder="select a group first."
+                  />
+                }
+                {
+                  chosenSubject.label ? <Select
+                    className="form-stats-module-list"
+                    classNames={{
+                      singleValue: (state) => "form-stats-module-list-chosen",
+                      control: (state) => "dropbtn",
+                      container: (state) => "dropdown",
+                      menuList: (state) => "dropdown-content",
+                    }}
+                    options={moduleList.map((i) => ({ ...i, value: i, label: i.name }))}
+                    placeholder="select a module."
+                    onChange={(e) => {
+                      setChosenModule(e);
+                    }}
+                  /> : <Select
+                    isDisabled={true} 
+                    className="form-stats-module-list"
+                    classNames={{
+                      singleValue: (state) => "form-stats-module-list-chosen",
+                      control: (state) => "dropbtn",
+                      container: (state) => "dropdown",
+                      menuList: (state) => "dropdown-content",
+                    }}
+                    placeholder={chosenGroup ? "select a subject first." : "select a group first."}
+                  />
+                }
               </div>
             </div>
           )
