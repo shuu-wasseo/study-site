@@ -121,7 +121,6 @@ async function groupTotal(username, group, addedSubject={ id:"" }, addedModule =
       } else {
         totalScore += await subjectTotal(username, group, item) * item.weightage;
       }
-      console.log("check", totalScore, totalWeightage)
     }
 
     return totalWeightage !== 0 ? (totalScore / totalWeightage) : 0;
@@ -802,7 +801,7 @@ function Body(props) {
   useEffect(() => {
     try {
       let username = JSON.parse(Cookies.get("loggedIn")).username
-      if (checkLoggedIn(users, Cookies.get("loggedIn")) && props.tab === 1) {
+      if (checkLoggedIn(users, Cookies.get("loggedIn"))) {
         if (Object.keys(chosenGroup).length) {
           fetchData(
             [
@@ -1108,6 +1107,8 @@ function Body(props) {
     }
   }
  
+  console.log(chosenGroup, groupList, chosenSubject, subjectList, chosenModule, moduleList)
+
   if (props.error) {
     return (<div className='body'>{String(props.error)}</div>)
   } else if (props.loading) {
@@ -1260,7 +1261,6 @@ function Body(props) {
             </div>
           )
         } else {
-          console.log(chosenGroup, chosenSubject, chosenModule, moduleList)
           return (
             <div className="body">
               here are all your stats!
@@ -1283,14 +1283,14 @@ function Body(props) {
                     selectclasses
                   }
                   styles={selectstyles}
-                  options={groupList.map((i) => ({ ...i, value: i, label: i.name }))}
+                  options={groupList.map((i) => ({ value: i, label: i.name }))}
                   placeholder="select a group."
                   onChange={(e) => {
-                    setChosenGroup(e);
+                    setChosenGroup(e.value);
                   }}
                 />
                 {
-                  chosenGroup.label ? <Select
+                  chosenGroup.name ? <Select
                     className="form-stats-subject-list"
                     classNames={
                       selectclasses
@@ -1313,7 +1313,7 @@ function Body(props) {
                   />
                 }
                 {
-                  chosenSubject.label ? <Select
+                  chosenSubject.name ? <Select
                     className="form-stats-module-list"
                     classNames={
                       selectclasses
@@ -1521,50 +1521,42 @@ function AddLog(props) {
  
   return (
     <div className="add-log">
-      add log:
-      <Select
-        className="form-addlog-group-list"
-        classNames={
-          selectclasses
-        }
-        styles={
-          selectstyles
-        }
-        options={
-          groupList.map(i => {return {value: i.name, label: i.name}})
-        }
-        placeholder="select a group." 
-        onChange={e => {
-          setChosenGroup(e.value);
-        }}
-      />
       {loggedIn ? (
-        chosenGroup ? (
+        <>
+          <p>add log:</p>
           <Select
-            className="form-addlog-subject-list"
-            classNames={
-              selectclasses
-            }
+            className="form-addlog-group-list"
+            classNames={selectclasses}
             styles={selectstyles}
-            options={subjectList.map((i) => ({ value: i, label: i.name }))}
-            placeholder="select a subject."
+            options={groupList.map((i) => ({ value: i, label: i.name }))}
+            placeholder="select a group."
             onChange={(e) => {
-              setChosenSubject(e.value);
+              setChosenGroup(e.value);
             }}
           />
-        ) : (
-          <Select
-            isDisabled={true}
-            className="form-addlog-subject-list"
-            classNames={
-              selectclasses
-            }
-            styles={selectstyles}
-            placeholder="select a group first."
-          />
-        )
+          {chosenGroup.name ? (
+            <Select
+              className="form-addlog-subject-list"
+              classNames={selectclasses}
+              styles={selectstyles}
+              options={subjectList.map((i) => ({ value: i, label: i.name }))}
+              placeholder="select a subject."
+              onChange={(e) => {
+                setChosenSubject(e.value);
+              }}
+            />
+          ) : (
+            <Select
+              isDisabled={true}
+              className="form-addlog-subject-list"
+              classNames={selectclasses}
+              styles={selectstyles}
+              placeholder="select a group first."
+            />
+          )}
+        </>
       ) : null}
-      {chosenSubject ? (
+      {chosenSubject.name ? (
         <Select
           className="form-addlog-module-list"
           classNames={
@@ -1592,7 +1584,7 @@ function AddLog(props) {
           }
         />
       )}
-      {chosenModule ? (
+      {chosenModule.name ? (
         <div>
           <div>
             <Select
