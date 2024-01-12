@@ -388,10 +388,9 @@ function SubjectsBody(props) {
             system: <Select 
               id="form-addgroup-system-list" 
               classNames={
-                {
-                  singleValue: state => "form-addgroup-system-list-chosen"
-                }
+                selectclasses
               }
+              styles={selectstyles}
               options={props.systems.map(i => {return {value: i.name, label: i.name}})} 
               defaultValue={
                 {value: props.systems[0].name, label: props.systems[0].name}
@@ -451,10 +450,9 @@ function SubjectsBody(props) {
             system: <Select 
               id="form-editgroup-system-list" 
               classNames={
-                {
-                  singleValue: state => "form-editgroup-system-list-chosen"
-                }
+                selectclasses
               }
+              styles={selectstyles}
               options={props.systems.map(i => {return {value: i.name, label: i.name}})} 
               defaultValue={props.chosenGroup.system} 
               placeholder="select a system." 
@@ -1269,12 +1267,10 @@ function Body(props) {
               <div>
                 <Select
                   className="form-stats-type-list"
-                  classNames={{
-                    singleValue: (state) => "form-stats-type-list-chosen",
-                    control: (state) => "dropbtn",
-                    container: (state) => "dropdown",
-                    menuList: (state) => "dropdown-content",
-                  }}
+                  classNames={
+                    selectclasses
+                  }
+                  styles={selectstyles}
                   options={["line", "bar"].map((i) => ({ value: i, label: i }))}
                   placeholder="select a graph type."
                   onChange={(e) => {
@@ -1283,12 +1279,10 @@ function Body(props) {
                 />
                 <Select
                   className="form-stats-group-list"
-                  classNames={{
-                    singleValue: (state) => "form-stats-group-list-chosen",
-                    control: (state) => "dropbtn",
-                    container: (state) => "dropdown",
-                    menuList: (state) => "dropdown-content",
-                  }}
+                  classNames={
+                    selectclasses
+                  }
+                  styles={selectstyles}
                   options={groupList.map((i) => ({ ...i, value: i, label: i.name }))}
                   placeholder="select a group."
                   onChange={(e) => {
@@ -1298,12 +1292,10 @@ function Body(props) {
                 {
                   chosenGroup.label ? <Select
                     className="form-stats-subject-list"
-                    classNames={{
-                      singleValue: (state) => "form-stats-subject-list-chosen",
-                      control: (state) => "dropbtn",
-                      container: (state) => "dropdown",
-                      menuList: (state) => "dropdown-content",
-                    }}
+                    classNames={
+                      selectclasses
+                    }
+                    styles={selectstyles}
                     options={subjectList.map((i) => ({ ...i, value: i, label: i.name }))}
                     placeholder="select a subject."
                     onChange={(e) => {
@@ -1313,24 +1305,20 @@ function Body(props) {
                   /> : <Select
                     isDisabled={true} 
                     className="form-stats-subject-list"
-                    classNames={{
-                      singleValue: (state) => "form-stats-subject-list-chosen",
-                      control: (state) => "dropbtn",
-                      container: (state) => "dropdown",
-                      menuList: (state) => "dropdown-content",
-                    }}
+                    classNames={
+                      selectclasses
+                    }
+                    styles={selectstyles}
                     placeholder="select a group first."
                   />
                 }
                 {
                   chosenSubject.label ? <Select
                     className="form-stats-module-list"
-                    classNames={{
-                      singleValue: (state) => "form-stats-module-list-chosen",
-                      control: (state) => "dropbtn",
-                      container: (state) => "dropdown",
-                      menuList: (state) => "dropdown-content",
-                    }}
+                    classNames={
+                      selectclasses
+                    }
+                    styles={selectstyles}
                     options={moduleList.map((i) => ({ ...i, value: i, label: i.name }))}
                     placeholder="select a module."
                     onChange={(e) => {
@@ -1339,12 +1327,10 @@ function Body(props) {
                   /> : <Select
                     isDisabled={true} 
                     className="form-stats-module-list"
-                    classNames={{
-                      singleValue: (state) => "form-stats-module-list-chosen",
-                      control: (state) => "dropbtn",
-                      container: (state) => "dropdown",
-                      menuList: (state) => "dropdown-content",
-                    }}
+                    classNames={
+                      selectclasses
+                    }
+                    styles={selectstyles}
                     placeholder={chosenGroup ? "select a subject first." : "select a group first."}
                   />
                 }
@@ -1556,9 +1542,10 @@ function AddLog(props) {
         chosenGroup ? (
           <Select
             className="form-addlog-subject-list"
-            classNames={{
-              singleValue: (state) => "form-addlog-subject-list-chosen",
-            }}
+            classNames={
+              selectclasses
+            }
+            styles={selectstyles}
             options={subjectList.map((i) => ({ value: i, label: i.name }))}
             placeholder="select a subject."
             onChange={(e) => {
@@ -1569,9 +1556,10 @@ function AddLog(props) {
           <Select
             isDisabled={true}
             className="form-addlog-subject-list"
-            classNames={{
-              singleValue: (state) => "form-addlog-subject-list-chosen",
-            }}
+            classNames={
+              selectclasses
+            }
+            styles={selectstyles}
             placeholder="select a group first."
           />
         )
@@ -1579,9 +1567,10 @@ function AddLog(props) {
       {chosenSubject ? (
         <Select
           className="form-addlog-module-list"
-          classNames={{
-            singleValue: (state) => "form-addlog-module-list-chosen",
-          }}
+          classNames={
+            selectclasses
+          }
+          styles={selectstyles}
           options={moduleList.map((i) => ({ value: i, label: i.name }))}
           placeholder="select a module."
           onChange={(e) => {
@@ -1592,9 +1581,10 @@ function AddLog(props) {
         <Select
           isDisabled={true}
           className="form-addlog-module-list"
-          classNames={{
-            singleValue: (state) => "form-addlog-module-list-chosen",
-          }}
+          classNames={
+            selectclasses
+          }
+          styles={selectstyles}
           placeholder={
             chosenGroup
               ? "select a subject first."
@@ -1607,9 +1597,10 @@ function AddLog(props) {
           <div>
             <Select
               className="form-addlog-progress-list"
-              classNames={{
-                singleValue: (state) => "form-addlog-progress-list-chosen",
-              }}
+              classNames={
+                selectclasses
+              }
+              styles={selectstyles}
               options={tiers.map((tier) => ({
                 value: tier,
                 label: tier.name,
