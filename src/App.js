@@ -1249,11 +1249,35 @@ function Body(props) {
           </div>
         )
       case 2:
-        return (
-          <div className="body">
-            here are all your stats!
-          </div>
-        )
+        if (!loggedIn) {
+          return (
+            <div className="body">
+              log in first!
+            </div>
+          )
+        } else {
+          return (
+            <div className="body">
+              here are all your stats!
+              <div>
+                <Select
+                  className="form-stats-timegraph-group-list"
+                  classNames={{
+                    singleValue: (state) => "form-addlog-group-list-chosen",
+                    control: (state) => "dropbtn",
+                    container: (state) => "dropdown",
+                    menuList: (state) => "dropdown-content",
+                  }}
+                  options={groupList.map((i) => ({ value: i, label: i.name }))}
+                  placeholder="select a group."
+                  onChange={(e) => {
+                    setChosenGroup(e.value);
+                  }}
+                />
+              </div>
+            </div>
+          )
+        }
       case 3:
         if (!loggedIn) {
           if (!props.loading) {
@@ -1435,167 +1459,165 @@ function AddLog(props) {
     fetchDataAsync()
   }, [username, chosenGroup, chosenSubject, chosenModule, chosenTier.value])
  
+  
   return (
     <div className="add-log">
       add log:
-      <Select 
+      <Select
         className="form-addlog-group-list"
-        classNames={
-          {
-            singleValue: state => "form-addlog-group-list-chosen",
-            control: state => "dropbtn",
-            container: state => "dropdown",
-            menuList: state => "dropdown-content",
-
-          }
-        }
-        options={
-          groupList.map(i => {return {value: i, label: i.name}})
-        }
-        placeholder="select a group." 
-        onChange={e => {
-          setChosenGroup(e.value)
+        classNames={{
+          singleValue: (state) => "form-addlog-group-list-chosen",
+          control: (state) => "dropbtn",
+          container: (state) => "dropdown",
+          menuList: (state) => "dropdown-content",
+        }}
+        options={groupList.map((i) => ({ value: i, label: i.name }))}
+        placeholder="select a group."
+        onChange={(e) => {
+          setChosenGroup(e.value);
         }}
       />
-      { 
-        chosenGroup 
-          ? <Select 
+      {loggedIn ? (
+        chosenGroup ? (
+          <Select
             className="form-addlog-subject-list"
-            classNames={
-              {
-                singleValue: state => "form-addlog-subject-list-chosen"
-              }
-            }
-            options={
-              subjectList.map(i => {return {value: i, label: i.name}})
-            } 
-            placeholder="select a subject." 
-            onChange={e => {
-              setChosenSubject(e.value)
+            classNames={{
+              singleValue: (state) => "form-addlog-subject-list-chosen",
+            }}
+            options={subjectList.map((i) => ({ value: i, label: i.name }))}
+            placeholder="select a subject."
+            onChange={(e) => {
+              setChosenSubject(e.value);
             }}
           />
-          : <Select
+        ) : (
+          <Select
             isDisabled={true}
             className="form-addlog-subject-list"
-            classNames={
-              {
-                singleValue: state => "form-addlog-subject-list-chosen"
-              }
-            }
-            placeholder="select a group first." 
-          />
-      }
-      { 
-        chosenSubject 
-          ? <Select 
-            className="form-addlog-module-list"
-            classNames={
-              {
-                singleValue: state => "form-addlog-module-list-chosen"
-              }
-            }
-            options={
-              moduleList.map(i => {return {value: i, label: i.name}})
-            } 
-            placeholder="select a module." 
-            onChange={e => {
-              setChosenModule(e.value)
+            classNames={{
+              singleValue: (state) => "form-addlog-subject-list-chosen",
             }}
+            placeholder="select a group first."
           />
-          : <Select
-            isDisabled={true}
-            className="form-addlog-module-list"
-            classNames={
-              {
-                singleValue: state => "form-addlog-module-list-chosen"
-              }
-            }
-            placeholder={chosenGroup ? "select a subject first." : "select a group first."}
-          />
-      }
-      {
-        chosenModule ? <div>
+        )
+      ) : null}
+      {chosenSubject ? (
+        <Select
+          className="form-addlog-module-list"
+          classNames={{
+            singleValue: (state) => "form-addlog-module-list-chosen",
+          }}
+          options={moduleList.map((i) => ({ value: i, label: i.name }))}
+          placeholder="select a module."
+          onChange={(e) => {
+            setChosenModule(e.value);
+          }}
+        />
+      ) : (
+        <Select
+          isDisabled={true}
+          className="form-addlog-module-list"
+          classNames={{
+            singleValue: (state) => "form-addlog-module-list-chosen",
+          }}
+          placeholder={
+            chosenGroup
+              ? "select a subject first."
+              : "select a group first."
+          }
+        />
+      )}
+      {chosenModule ? (
+        <div>
           <div>
-            progress: <Select 
-            className="form-addlog-progress-list"
-            classNames={
-              {
-                singleValue: state => "form-addlog-progress-list-chosen"
-              }
-            }
-            options={tiers.map(tier => {return {value: tier, label: tier.name}})}
-            onChange={
-              (e) => {
-                setChosenTier(e.value)
-              }
-            }
-            placeholder="select a tier."
+            <Select
+              className="form-addlog-progress-list"
+              classNames={{
+                singleValue: (state) => "form-addlog-progress-list-chosen",
+              }}
+              options={tiers.map((tier) => ({
+                value: tier,
+                label: tier.name,
+              }))}
+              onChange={(e) => {
+                setChosenTier(e.value);
+              }}
+              placeholder="select a tier."
             />
           </div>
           <div>
-            description: <input 
-              type="text" 
-              id="form-addlog-progress-input"
-            />
+            description:{" "}
+            <input type="text" id="form-addlog-progress-input" />
           </div>
-          <button onClick={
-            () => {
+          <button
+            onClick={() => {
               editModule(
-                sha256(username), 
-                sha256(chosenGroup.name), 
-                sha256(chosenSubject.name), 
+                sha256(username),
+                sha256(chosenGroup.name),
+                sha256(chosenSubject.name),
                 {
                   id: chosenModule.id,
                   tier: chosenTier.value,
-                  [`records.${todaysDate()}`]: chosenTier.value
-                }, 
+                  [`records.${todaysDate()}`]: chosenTier.value,
+                },
                 true
-              )
+              );
               fetchData(
                 [
-                  sha256(username), "groups", 
-                  sha256(chosenGroup.name), "subjects", 
-                  sha256(chosenSubject.name), "modules"
-                ], 
-                props.setModuleList, props.setLoading, setError
-              )
-              // add to log 
-            }
-          }>add log</button>
+                  sha256(username),
+                  "groups",
+                  sha256(chosenGroup.name),
+                  "subjects",
+                  sha256(chosenSubject.name),
+                  "modules",
+                ],
+                props.setModuleList,
+                props.setLoading,
+                setError
+              );
+            }}
+          >
+            add log
+          </button>
           <div>
-            <p>module score: {
-              typeof chosenModule.tier === "number" 
-                ? Math.round(chosenModule.tier / (tiers.length - 1) * 10000) / 100
-                : "?"
-            } → {
-              typeof chosenTier.value === "number" 
-                ? Math.round(chosenTier.value / (tiers.length - 1) * 10000) / 100
-                : "?"
-            }</p>
-            <p>subject score: {
-              typeof subjectTotals[0] === "number"
+            <p>
+              module score:{" "}
+              {typeof chosenModule.tier === "number"
+                ? Math.round(
+                    (chosenModule.tier / (tiers.length - 1)) * 10000
+                  ) / 100
+                : "?"}{" "}
+              →{" "}
+              {typeof chosenTier.value === "number"
+                ? Math.round((chosenTier.value / (tiers.length - 1)) * 10000) /
+                  100
+                : "?"}
+            </p>
+            <p>
+              subject score:{" "}
+              {typeof subjectTotals[0] === "number"
                 ? Math.round(subjectTotals[0] * 100) / 100
-                : "?"
-            } → {
-              typeof subjectTotals[1] === "number"
+                : "?"}{" "}
+              →{" "}
+              {typeof subjectTotals[1] === "number"
                 ? Math.round(subjectTotals[1] * 100) / 100
-                : "?"
-            }</p>
-            <p>group score: {
-              typeof groupTotals[0] === "number"
+                : "?"}
+            </p>
+            <p>
+              group score:{" "}
+              {typeof groupTotals[0] === "number"
                 ? Math.round(groupTotals[0] * 100) / 100
-                : "?"
-            } → {
-              typeof groupTotals[1] === "number"
+                : "?"}{" "}
+              →{" "}
+              {typeof groupTotals[1] === "number"
                 ? Math.round(groupTotals[1] * 100) / 100
-                : "?"
-            }</p>
+                : "?"}
+            </p>
           </div>
-        </div> : null
-      }
-
+        </div>
+      ) : null}
     </div>
-  )
+  );
 }
 
 function App() {
