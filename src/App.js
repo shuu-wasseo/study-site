@@ -1453,7 +1453,7 @@ function AddLog(props) {
           selectstyles
         }
         options={
-          [{value: "test", label: "testing label"}]
+          [props.groupList.map(i => {return {value: i.name, label: i.name}})]
         }
         placeholder="select a group." 
         onChange={e => {
